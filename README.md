@@ -14,8 +14,9 @@ Before running the script, ensure you have the following installed on your syste
 ## Running the Script
 
 1. Ensure you have Docker and Docker Compose installed.
-2. Run the script via the command line or double-click the `.bat` file.
-3. Follow the prompts to complete the installation.
+2. Download the source code found here. Extract the files
+3. Run the script via the command line or double-click the `.bat` file.
+4. Follow the prompts to complete the installation.
 
 ## Misc Notes
 
