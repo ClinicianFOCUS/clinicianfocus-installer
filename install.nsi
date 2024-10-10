@@ -59,7 +59,14 @@
         StrCpy $Speech2Text_Installed 1
     SectionEnd
 
-    Section "Install Freescribe Client" Section3     
+    Section "Install Freescribe Client" Section3 
+
+        CreateDirectory "$INSTDIR\freescribe"
+        SetOutPath "$INSTDIR\freescribe"
+        File ".\freescribe\FreeScribeInstaller_windows.exe"
+
+        ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /D=$APPDATA\FreeScribe'
+
         StrCpy $FreeScribe_Installed 1
     SectionEnd
 
