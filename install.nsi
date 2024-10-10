@@ -1,29 +1,25 @@
 ;--------------------------------
-;Include Modern UI
+;Include Modern UI and nsDialogs
 
-  !include "MUI2.nsh"
+    !include "MUI2.nsh"
+    !include "nsDialogs.nsh"
 
-Var SectionIndex
+    Var Checkbox_LLM
+    Var Checkbox_Speech2Text
+    Var Checkbox_FreeScribe
 
 ;--------------------------------
 ;General
 
-  ;Name and file
-  Name "ClinicianFOCUS Toolbox Installer"
-  OutFile "clinicianfocus_toolbox-installer.exe"
+    Name "ClinicianFOCUS Toolbox Installer"
+    OutFile "clinicianfocus_toolbox-installer.exe"
 
-  ;Default installation folder
-  InstallDir "$PROGRAMFILES\TOOLKITFORFOCUS"
+    InstallDir "$PROGRAMFILES\TOOLKITFORFOCUS"
 
+    ; Define the logo image
+    !define MUI_ICON "./assets/logo.ico"
 
-
-; Define the logo image
-    !define MUI_ICON ./assets/logo.ico
-
-;--------------------------------
-;Interface Settings
-
-  !define MUI_ABORTWARNING
+    !define MUI_ABORTWARNING
 
 ;--------------------------------
 ;Pages
@@ -32,130 +28,88 @@ Var SectionIndex
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     !insertmacro MUI_PAGE_INSTFILES
-    !define MUI_FINISHPAGE_TITLE "Installation Complete"
-    !define MUI_FINISHPAGE_TEXT "The installation of the ClincianFOCUS Toolbox has completed successfully!"
-    !insertmacro MUI_PAGE_FINISH
-
+    Page custom FinishPageCreate FinishPageLeave
 
     !insertmacro MUI_UNPAGE_CONFIRM
     !insertmacro MUI_UNPAGE_INSTFILES
 
-;--------------------------------
-;Languages
-
-  !insertmacro MUI_LANGUAGE "English"
+    !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
 ;Installer Sections
 
-; ----------- LLM SECTION-----------------
     Section "Install Local-LLM-Container" Section1
         WriteUninstaller "$INSTDIR\uninstall.exe"
-
-        ; Check for docker and docker compose
         Call CheckForDocker
-
-        ; Create the installation directory
-        CreateDirectory "$INSTDIR"
         CreateDirectory "$INSTDIR\local-llm-container"
-
-        SetOutPath "$INSTDIR\local-llm-container"    ; Set the output directory to the installation folder
-
-        File '.\assets\License.txt'
-
-        File '.\local-llm-container\'
-
-        Goto done
-        done:
-        
-        ; MOVE TO END OF INSTALL
-        ;nsExec::ExecToLog 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
-        
-
+        SetOutPath "$INSTDIR\local-llm-container"
+        File ".\local-llm-container\*.*"
     SectionEnd
-    LangString DESC_Section1 ${LANG_ENGLISH} "Turnkey local llm container to support other activities and tools we are developing. This will host your own LLM with accesible API."
-
-;------------ LLM SECTION END -------------
-
-
-;---------------- Speech2Text Section--------------------
 
     Section "Install Speech2Text-Container" Section2
-
+        CreateDirectory "$INSTDIR\speech2text-container"
+        SetOutPath "$INSTDIR\speech2text-container"
+        File ".\speech2text-container\*.*"
     SectionEnd
-    LangString DESC_Section2 ${LANG_ENGLISH} "Containerized solution for AI speech-to-text that can run locally. This runs a whisper server with accessible API."
-;---------------- Speech2Text Section End ----------------
 
-
-;---------- FreeScribe Section ----------------------
     Section "Install Freescribe Client" Section3
-
-    SectionEnd
-    LangString DESC_Section3 ${LANG_ENGLISH} "A medical scribe capable of creating SOAP notes running Whisper and Kobold based on conversation with a patient"
-;---------- FreeScribe Section End ------------------
-
-
-;---------- Finish Page Screen ----------------------
-
-;---------- Finsish Page Screen End -----------------
-
-;--------------------------------
-;Descriptions
-
-  ;Language strings
-  LangString DESC_SecDockerCompose ${LANG_ENGLISH} "Install Docker Compose and run the Docker Compose file."
-
-  ;Assign language strings to sections
-  !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-      !insertmacro MUI_DESCRIPTION_TEXT ${Section1} $(DESC_Section1)
-      !insertmacro MUI_DESCRIPTION_TEXT ${Section2} $(DESC_Section2)
-      !insertmacro MUI_DESCRIPTION_TEXT ${Section3} $(DESC_Section3)
-  !insertmacro MUI_FUNCTION_DESCRIPTION_END
-
-;--------------------------------
-;Uninstaller Section
-
-
-
-    Section "Uninstall"
-
-        ; Remove installation directory
-        RMDir "$INSTDIR"
-
     SectionEnd
 
+;--------------------------------
+;Finish Page Customization using nsDialogs
 
-; --------- UTIL FUNCTIONS -----------
+Function FinishPageCreate
+    nsDialogs::Create 1018
+    Pop $0
+    ${If} $0 == error
+        Abort
+    ${EndIf}
+
+    ; Create the checkboxes
+    ${NSD_CreateCheckbox} 0u 0u 100% 12u "Launch Local LLM"
+    Pop $Checkbox_LLM
+    ${NSD_SetState} $Checkbox_LLM ${BST_UNCHECKED}
+
+    ${NSD_CreateCheckbox} 0u 14u 100% 12u "Launch Speech2Text"
+    Pop $Checkbox_Speech2Text
+    ${NSD_SetState} $Checkbox_Speech2Text ${BST_UNCHECKED}
+
+    ${NSD_CreateCheckbox} 0u 28u 100% 12u "Launch FreeScribe"
+    Pop $Checkbox_FreeScribe
+    ${NSD_SetState} $Checkbox_FreeScribe ${BST_UNCHECKED}
+
+    nsDialogs::Show
+FunctionEnd
+
+Function FinishPageLeave
+    ; Check if Local LLM was selected
+    ${NSD_GetState} $Checkbox_LLM $0
+    StrCmp $0 ${BST_CHECKED} +2
+        ;nsExec::ExecToLog 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
+
+    ; Check if Speech2Text was selected
+    ${NSD_GetState} $Checkbox_Speech2Text $0
+    StrCmp $0 ${BST_CHECKED} +2
+        ;nsExec::ExecToLog 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
+
+    ; Check if FreeScribe was selected
+    ${NSD_GetState} $Checkbox_FreeScribe $0
+    StrCmp $0 ${BST_CHECKED} +2
+        ;Exec '"$INSTDIR\freescribe\Freescribe.exe"'
+FunctionEnd
+
+;--------------------------------
+;UTIL FUNCTIONS
+
     Function CheckForDocker
-
-        ; Run the Docker Compose version command
         nsExec::ExecToStack 'docker-compose --version'
-        Pop $0  ; exit code of command
-        Pop $1  ; command output
-
-        ; Check if Docker Compose is installed
+        Pop $0
         StrCmp $0 "0" +3 0
-            ; If not installed, display an error and abort
-            MessageBox MB_OK "Docker Compose is not installed. Please install it before continuing. Canceling Install..."
+            MessageBox MB_OK "Docker Compose is not installed. Canceling install..."
             Abort
-
-        ; If installed, continue
-        Goto CheckDocker
-
-    CheckDocker:
-        ; Check if Docker is installed
         nsExec::ExecToStack 'docker --version'
-        Pop $0  ; exit code of command
-        Pop $1  ; command output
-        
+        Pop $0
         StrCmp $0 "0" +3 0
-            ; If Docker is not installed, display an error and abort
-            MessageBox MB_OK "Docker is not installed. Please install it before continuing. Canceling Install..."
+            MessageBox MB_OK "Docker is not installed. Canceling install..."
             Abort
-
-        ; If both Docker and Docker Compose are installed, continue with the installation
-        Goto Done
-
-    Done:
     FunctionEnd
-
