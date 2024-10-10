@@ -9,8 +9,8 @@ Var SectionIndex
 ;General
 
   ;Name and file
-  Name "Docker Compose Installer"
-  OutFile "DockerComposeInstaller.exe"
+  Name "ClinicianFOCUS Toolbox Installer"
+  OutFile "clinicianfocus_toolbox-installer.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\TOOLKITFORFOCUS"
@@ -18,7 +18,7 @@ Var SectionIndex
 
 
 ; Define the logo image
-!define MUI_ICON ./assets/logo.ico
+    !define MUI_ICON ./assets/logo.ico
 
 ;--------------------------------
 ;Interface Settings
@@ -28,13 +28,17 @@ Var SectionIndex
 ;--------------------------------
 ;Pages
 
-  !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
-  !insertmacro MUI_PAGE_COMPONENTS
-  !insertmacro MUI_PAGE_DIRECTORY
-  !insertmacro MUI_PAGE_INSTFILES
+    !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
+    !insertmacro MUI_PAGE_COMPONENTS
+    !insertmacro MUI_PAGE_DIRECTORY
+    !insertmacro MUI_PAGE_INSTFILES
+    !define MUI_FINISHPAGE_TITLE "Installation Complete"
+    !define MUI_FINISHPAGE_TEXT "The installation of the ClincianFOCUS Toolbox has completed successfully!"
+    !insertmacro MUI_PAGE_FINISH
 
-  !insertmacro MUI_UNPAGE_CONFIRM
-  !insertmacro MUI_UNPAGE_INSTFILES
+
+    !insertmacro MUI_UNPAGE_CONFIRM
+    !insertmacro MUI_UNPAGE_INSTFILES
 
 ;--------------------------------
 ;Languages
@@ -46,6 +50,8 @@ Var SectionIndex
 
 ; ----------- LLM SECTION-----------------
     Section "Install Local-LLM-Container" Section1
+        WriteUninstaller "$INSTDIR\uninstall.exe"
+
         ; Check for docker and docker compose
         Call CheckForDocker
 
@@ -64,7 +70,7 @@ Var SectionIndex
         
         ; MOVE TO END OF INSTALL
         ;nsExec::ExecToLog 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
-
+        
 
     SectionEnd
     LangString DESC_Section1 ${LANG_ENGLISH} "Turnkey local llm container to support other activities and tools we are developing. This will host your own LLM with accesible API."
@@ -89,6 +95,10 @@ Var SectionIndex
 ;---------- FreeScribe Section End ------------------
 
 
+;---------- Finish Page Screen ----------------------
+
+;---------- Finsish Page Screen End -----------------
+
 ;--------------------------------
 ;Descriptions
 
@@ -105,15 +115,14 @@ Var SectionIndex
 ;--------------------------------
 ;Uninstaller Section
 
-Section "Uninstall"
 
-  ; Remove installation directory
-  RMDir "$INSTDIR"
 
-  ; Remove registry key
-  DeleteRegKey /ifempty HKCU "Software\DockerCompose"
+    Section "Uninstall"
 
-SectionEnd
+        ; Remove installation directory
+        RMDir "$INSTDIR"
+
+    SectionEnd
 
 
 ; --------- UTIL FUNCTIONS -----------
