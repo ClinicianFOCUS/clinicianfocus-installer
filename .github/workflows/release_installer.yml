@@ -28,12 +28,7 @@ jobs:
 
       - name: Install release FreeScribe client installer from latest release
         run: |
-          mkdir -p freescribe && 
-          curl -s https://api.github.com/repos/clinicianfocus/freescribe/releases/latest | 
-          grep "browser_download_url.*windows.exe" | 
-          cut -d : -f 2,3 | 
-          tr -d \" | 
-          xargs -I {} wget -P freescribe {}
+          @echo off & mkdir freescribe & for /f "tokens=*" %i in ('curl -s https://api.github.com/repos/clinicianfocus/freescribe/releases/latest ^| findstr /i "browser_download_url.*windows.exe"') do @set "url=%i" & set "url=!url:*: =!" & set "url=!url:"=!" & powershell -Command "Invoke-WebRequest -Uri '!url!' -OutFile 'freescribe\downloaded_file.exe'"
 
       - name: Set up NSIS
         uses: joncloud/makensis-action@1c9f4bf2ea0c771147db31a2f3a7f5d8705c0105 # v4.1 commit hash
