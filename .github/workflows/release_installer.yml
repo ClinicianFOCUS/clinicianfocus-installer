@@ -31,11 +31,15 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const { data: release } = await github.repos.getLatestRelease({
-            owner: 'OWNER',   // Replace with the repository owner's username
-            repo: 'REPO'      // Replace with the repository name
+            const { data: release } = await github.rest.repos.getLatestRelease({
+              owner: 'OWNER',   // Replace with the repository owner's username
+              repo: 'REPO'      // Replace with the repository name
             });
-            return release.assets.find(asset => asset.name.endsWith('.exe')).url;
+            const asset = release.assets.find(asset => asset.name.endsWith('.exe'));
+            if (!asset) {
+              throw new Error('No executable found in the latest release assets.');
+            }
+            return asset.url;
 
       - name: Download latest release EXE
         run: |
