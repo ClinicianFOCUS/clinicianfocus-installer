@@ -127,10 +127,16 @@
         ; Open the .env file for writing (will create the file if it doesn't exist)
         FileOpen $3 $0 w
         ${If} $3 == ""
-            MessageBox MB_OK "Error: Could not create .env file!"
+            ; Get the last error code
+            StrCpy $0 $0 $3
+            ${If} $0 == "0"
+                MessageBox MB_OK "Error: The .env file could not be created. Reason: Access denied or no write permissions."
+            ${Else}
+                MessageBox MB_OK "Error: Could not create .env file! Error code: $0"
+            ${EndIf}
             Abort
         ${EndIf}
-
+        
         ; Write the MODEL_NAME environment variable to the .env file
         FileWrite $3 "MODEL_NAME=$1$\r$\n"  ; Write the selected model directly from $1
 
