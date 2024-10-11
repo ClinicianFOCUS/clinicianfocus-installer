@@ -1,13 +1,12 @@
-name: Pull Repos and Install Release
+name: Build Workflow
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    tags:
+      - "v*.*.*"
 
 jobs:
-  pull-and-install:
+  build-windows-installer:
     runs-on: windows-latest
 
     steps:
