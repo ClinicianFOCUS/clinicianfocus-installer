@@ -26,6 +26,10 @@ jobs:
           repository: ClinicianFOCUS/speech2text-container
           path: speech2text-container
 
+      - name: Create the Freesctibe Directory
+        run: |
+          mkdir freescribe
+
       - name: Get latest release
         id: get_release
         uses: actions/github-script@v6
