@@ -1,0 +1,41 @@
+name: Pull Repos and Install Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  pull-and-install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      - name: Checkout Local LLM
+        uses: actions/checkout@v3
+        with:
+          repository: ClinicianFOCUS/local-llm-container
+          path: local-llm-container
+
+      - name: Checkout repo2
+        uses: actions/checkout@v3
+        with:
+          repository: ClinicianFOCUS/speech2text-container
+          path: speech2text-container
+
+      - name: Install release from repo3
+        run: |
+          curl -s https://api.github.com/repos/clinicianfocus/freescribe/releases/latest \
+          | grep "*installer.exe" \
+          | cut -d : -f 2,3 \
+          | tr -d \" \
+          | wget -qi -
+
+      - name: Debug
+        run: |
+          ls -l
+          echo "Done"
+          ls -l local-llm-container
