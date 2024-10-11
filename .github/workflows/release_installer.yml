@@ -8,7 +8,7 @@ on:
 
 jobs:
   pull-and-install:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout this repo
