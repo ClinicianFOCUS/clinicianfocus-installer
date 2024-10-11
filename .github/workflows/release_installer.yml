@@ -38,7 +38,7 @@ jobs:
               owner: 'ClinicianFOCUS',   // Replace with the repository owner's username
               repo: 'FreeScribe'      // Replace with the repository name
             });
-            const asset = release.assets.find(asset => asset.name.endsWith('.exe'));
+            const asset = release.assets.find(asset => asset.name.endsWith('FreeScribeInstaller_windows.exe'));
             if (!asset) {
               throw new Error('No executable found in the latest release assets.');
             }
