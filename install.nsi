@@ -33,6 +33,7 @@
 ;Pages
 ; Define the pages for the installer
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
+    Page custom InstallTypePageCreate InstallTypePageLeave
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     Page custom ConditionalModelPageCreate ModelPageLeave
@@ -47,24 +48,32 @@
 ;--------------------------------
 ;Installer Sections
 ; Define the sections for different components to be installed
-    Section "Install Local-LLM-Container" Section1
-        WriteUninstaller "$INSTDIR\uninstall.exe"
+    Section "Basic Installation" BasicSection
+        SectionIn RO
         Call CheckForDocker
         CreateDirectory "$INSTDIR\local-llm-container"
         CreateDirectory "$INSTDIR\local-llm-container\models"
         SetOutPath "$INSTDIR\local-llm-container"
         File ".\local-llm-container\*.*"
         StrCpy $LLM_Installed 1
-    SectionEnd
-
-    Section "Install Speech2Text-Container" Section2
         CreateDirectory "$INSTDIR\speech2text-container"
         SetOutPath "$INSTDIR\speech2text-container"
         File ".\speech2text-container\*.*"
         StrCpy $Speech2Text_Installed 1
     SectionEnd
 
-    Section "Install Freescribe Client" Section3 
+    Section "Advanced Installation" AdvancedSection
+        SectionIn RO
+        Call CheckForDocker
+        CreateDirectory "$INSTDIR\local-llm-container"
+        CreateDirectory "$INSTDIR\local-llm-container\models"
+        SetOutPath "$INSTDIR\local-llm-container"
+        File ".\local-llm-container\*.*"
+        StrCpy $LLM_Installed 1
+        CreateDirectory "$INSTDIR\speech2text-container"
+        SetOutPath "$INSTDIR\speech2text-container"
+        File ".\speech2text-container\*.*"
+        StrCpy $Speech2Text_Installed 1
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
         File ".\freescribe\FreeScribeInstaller_windows.exe"
@@ -212,3 +221,35 @@ FunctionEnd
             MessageBox MB_OK "Docker is not installed. Canceling install..."
             Abort
     FunctionEnd
+;--------------------------------
+;Install Type Page Customization using nsDialogs
+; Function to create the install type page
+Function InstallTypePageCreate
+    nsDialogs::Create 1018
+    Pop $0
+    ${If} $0 == error
+        Abort
+    ${EndIf}
+
+    ; Create radio buttons for Basic and Advanced installation
+    ${NSD_CreateRadioButton} 0u 0u 100% 12u "Basic Installation"
+    Pop $0
+    ${NSD_SetState} $0 ${BST_CHECKED}
+
+    ${NSD_CreateRadioButton} 0u 14u 100% 12u "Advanced Installation"
+    Pop $1
+
+    nsDialogs::Show
+FunctionEnd
+
+Function InstallTypePageLeave
+    ; Check which installation type was selected
+    ${NSD_GetState} $0 $2
+    ${If} $2 == ${BST_CHECKED}
+        SectionSetFlags ${BasicSection} ${SF_SELECTED}
+        SectionSetFlags ${AdvancedSection} 0
+    ${Else}
+        SectionSetFlags ${BasicSection} 0
+        SectionSetFlags ${AdvancedSection} ${SF_SELECTED}
+    ${EndIf}
+FunctionEnd
