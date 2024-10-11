@@ -33,8 +33,8 @@
 
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
     !insertmacro MUI_PAGE_COMPONENTS
-    Page custom ConditionalModelPageCreate ModelPageLeave
     !insertmacro MUI_PAGE_DIRECTORY
+    Page custom ConditionalModelPageCreate ModelPageLeave
     !insertmacro MUI_PAGE_INSTFILES
     Page custom FinishPageCreate FinishPageLeave
 
@@ -120,6 +120,10 @@
         
         ; Get the Huggingface token
         ${NSD_GetText} $Input_HFToken $2
+
+        ; Create the .env directories for the Local LLM container
+        CreateDirectory "$INSTDIR"
+        CreateDirectory "$INSTDIR\local-llm-container\"
 
         ; Define the file path for the .env file
         StrCpy $0 "$INSTDIR\local-llm-container\.env"
