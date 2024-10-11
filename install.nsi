@@ -118,11 +118,8 @@
         StrCmp $1 "Custom" 0 +2
         MessageBox MB_OK "Please read the documentation for custom model use. This is for advanced users only."
         
-        MessageBox MB_OK "Selected Model: $1"
-
         ; Get the Huggingface token
         ${NSD_GetText} $Input_HFToken $2
-        MessageBox MB_OK "Huggingface Token: $2"
 
         ; Define the file path for the .env file
         StrCpy $0 "$INSTDIR\local-llm-container\.env"
@@ -141,14 +138,9 @@
         FileWrite $3 "HF_TOKEN=$2$\r$\n" ; Write the Huggingface token from $2
 
         ; Close the file
-        FileClose $3
+        FileClose $3 
 
-        Goto Done
 
-    NoSelection:
-        MessageBox MB_OK "No model selected!"
-
-    Done:
     FunctionEnd
 
 ;--------------------------------
@@ -199,7 +191,7 @@ Function FinishPageLeave
     ; Check if FreeScribe was selected
     ${NSD_GetState} $Checkbox_FreeScribe $0
     StrCmp $0 ${BST_CHECKED} 0 +2
-        Exec '"$INSTDIR\freescribe\Freescribe.exe"'
+        Exec '"$APPDATA\freescribe\freescribe-client.exe"'
 FunctionEnd
 
 ;--------------------------------
