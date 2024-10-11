@@ -21,7 +21,7 @@
     Name "ClinicianFOCUS Toolbox Installer"
     OutFile "clinicianfocus_toolbox-installer.exe"
 
-    InstallDir "$PROGRAMFILES\TOOLKITFORFOCUS"
+    InstallDir "$PROGRAMFILES\ClincianFOCUS Toolbox"
 
     ; Define the logo image
     !define MUI_ICON "./assets/logo.ico"
