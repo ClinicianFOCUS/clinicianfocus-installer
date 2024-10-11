@@ -33,7 +33,7 @@
 
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
     !insertmacro MUI_PAGE_COMPONENTS
-    Page custom ModelPageCreate ModelPageLeave
+    Page custom ConditionalModelPageCreate ModelPageLeave
     !insertmacro MUI_PAGE_DIRECTORY
     !insertmacro MUI_PAGE_INSTFILES
     Page custom FinishPageCreate FinishPageLeave
@@ -75,6 +75,17 @@
     SectionEnd
 
 ;--------------------------------
+;Conditional Model Selection Page Display
+
+    Function ConditionalModelPageCreate
+        SectionGetFlags ${Section1} $0
+        IntOp $0 $0 & ${SF_SELECTED}
+        ${If} $0 == ${SF_SELECTED}
+            Call ModelPageCreate
+        ${EndIf}
+    FunctionEnd
+
+;--------------------------------
 ;Model Selection Page Customization using nsDialogs
 
     Function ModelPageCreate
@@ -88,6 +99,7 @@
         ${NSD_CreateLabel} 0u 0u 100% 12u "Model:"
         ${NSD_CreateComboBox} 0u 14u 100% 12u ""
         Pop $DropDown_Model
+
         ${NSD_CB_AddString} $DropDown_Model "google/gemma-2-2b-it"
         ${NSD_CB_AddString} $DropDown_Model "Custom"
         ${NSD_CB_SelectString} $DropDown_Model "google/gemma-2-2b-it" ; Default selection
@@ -102,16 +114,10 @@
 
     Function ModelPageLeave
 
-        ; Get the selected index from the ComboBox
-        SendMessage $DropDown_Model ${CB_GETCURSEL} 0 0
-        Pop $0
-        IntCmp $0 -1 NoSelection
-
-        ; Initialize a variable to hold the selected text (allocate space for it)
-        StrCpy $1 "" ; Clear the variable to ensure no previous values are stored
-
-        ; Get the text from the selected index
-        SendMessage $DropDown_Model ${CB_GETLBTEXT} $0 $1 ; Retrieve the selected text into $1
+        ${NSD_GetText} $DropDown_Model $1  # $0 will hold the user input
+        StrCmp $1 "Custom" 0 +2
+        MessageBox MB_OK "Please read the documentation for custom model use. This is for advanced users only."
+        
         MessageBox MB_OK "Selected Model: $1"
 
         ; Get the Huggingface token
@@ -132,12 +138,10 @@
         FileWrite $3 "MODEL_NAME=$1$\r$\n"  ; Write the selected model directly from $1
 
         ; Write the HUGGINGFACE_TOKEN environment variable to the .env file
-        FileWrite $3 "HUGGINGFACE_TOKEN=$2$\r$\n" ; Write the Huggingface token from $2
+        FileWrite $3 "HF_TOKEN=$2$\r$\n" ; Write the Huggingface token from $2
 
         ; Close the file
         FileClose $3
-
-        MessageBox MB_OK ".env file has been written to $INSTDIR\.env"
 
         Goto Done
 
