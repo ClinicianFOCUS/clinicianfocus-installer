@@ -1,7 +1,0 @@
-openai-whisper
-fastapi
-uvicorn
-pydantic
-python-multipart
-argparse
-python-dotenv
