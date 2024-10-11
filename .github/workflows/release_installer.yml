@@ -26,14 +26,15 @@ jobs:
           repository: ClinicianFOCUS/speech2text-container
           path: speech2text-container
 
-      - name: Install release FreeScribe client installer from latest release
+      - name: Create directory and download FreeScribe
         run: |
           mkdir freescribe
-          for /f "tokens=*" %i in ('curl -s https://api.github.com/repos/clinicianfocus/freescribe/releases/latest ^| findstr /i "browser_download_url.*windows.exe"') do (
-          set "url=%i"
-          set "url=!url:*: =!"
-          set "url=!url:"=!"
-          powershell -Command "Invoke-WebRequest -Uri '!url!' -OutFile 'freescribe\downloaded_file.exe'"
+          setlocal enabledelayedexpansion
+          for /f "tokens=*" %%i in ('curl -s https://api.github.com/repos/clinicianfocus/freescribe/releases/latest ^| findstr /i "browser_download_url.*windows.exe"') do (
+            set "url=%%i"
+            set "url=!url:*: =!"
+            set "url=!url:"=!"
+            powershell -Command "Invoke-WebRequest -Uri '!url!' -OutFile 'freescribe\downloaded_file.exe'"
           )
         shell: cmd
 
