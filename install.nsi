@@ -1,10 +1,11 @@
 ;--------------------------------
 ;Include Modern UI and nsDialogs
-; Include necessary NSIS plugins for modern UI and dialogs
+
     !include "MUI2.nsh"
     !include "nsDialogs.nsh"
+    !include LogicLib.nsh
+    !include Sections.nsh
 
-    ; Declare variables for checkboxes and installation status
     Var Checkbox_LLM
     Var Checkbox_Speech2Text
     Var Checkbox_FreeScribe
@@ -18,7 +19,7 @@
 
 ;--------------------------------
 ;General
-; General settings for the installer
+
     Name "ClinicianFOCUS Toolbox Installer"
     OutFile "clinicianfocus_toolbox-installer.exe"
 
@@ -31,9 +32,8 @@
 
 ;--------------------------------
 ;Pages
-; Define the pages for the installer
+
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
-    Page custom InstallTypePageCreate InstallTypePageLeave
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     Page custom ConditionalModelPageCreate ModelPageLeave
@@ -47,43 +47,84 @@
 
 ;--------------------------------
 ;Installer Sections
-; Define the sections for different components to be installed
-    Section "Basic Installation" BasicSection
-        SectionIn RO
+
+    Section "Install Local-LLM-Container" Section1
         Call CheckForDocker
         CreateDirectory "$INSTDIR\local-llm-container"
         CreateDirectory "$INSTDIR\local-llm-container\models"
         SetOutPath "$INSTDIR\local-llm-container"
         File ".\local-llm-container\*.*"
         StrCpy $LLM_Installed 1
+    SectionEnd
+
+    Section "Install Speech2Text-Container" Section2
         CreateDirectory "$INSTDIR\speech2text-container"
         SetOutPath "$INSTDIR\speech2text-container"
         File ".\speech2text-container\*.*"
         StrCpy $Speech2Text_Installed 1
     SectionEnd
 
-    Section "Advanced Installation" AdvancedSection
-        SectionIn RO
-        Call CheckForDocker
-        CreateDirectory "$INSTDIR\local-llm-container"
-        CreateDirectory "$INSTDIR\local-llm-container\models"
-        SetOutPath "$INSTDIR\local-llm-container"
-        File ".\local-llm-container\*.*"
-        StrCpy $LLM_Installed 1
-        CreateDirectory "$INSTDIR\speech2text-container"
-        SetOutPath "$INSTDIR\speech2text-container"
-        File ".\speech2text-container\*.*"
-        StrCpy $Speech2Text_Installed 1
+    Section "Install Freescribe Client" Section3 
+
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
         File ".\freescribe\FreeScribeInstaller_windows.exe"
+
         ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /D=$APPDATA\FreeScribe'
+
         StrCpy $FreeScribe_Installed 1
     SectionEnd
 
+    Section "Uninstaller" Section4
+        WriteUninstaller "$INSTDIR\uninstall.exe"
+
+    SectionEnd
+
+;--------------------------------
+; On installer start
+
+    Function .onInit
+          !insertmacro SetSectionFlag ${Section4} ${SF_RO} 
+    FunctionEnd
+
+
+;--------------------------------
+;Uninstaller Section
+
+    Section "Uninstall"
+        ; Close all docker containers
+        ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" down'
+        ExecWait 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" down'
+
+        ; Delete files installed for Local LLM Container
+        Delete "$INSTDIR\local-llm-container\*.*"
+        RmDir "$INSTDIR\local-llm-container\models"
+        RmDir "$INSTDIR\local-llm-container"
+
+        ; Delete files installed for Speech2Text Container
+        Delete "$INSTDIR\speech2text-container\*.*"
+        RmDir "$INSTDIR\speech2text-container"
+
+        ; Delete Freescribe installed files
+        Delete "$INSTDIR\freescribe\FreeScribeInstaller_windows.exe"
+        RmDir "$INSTDIR\freescribe"
+
+        ; Remove uninstaller
+        Delete "$INSTDIR\uninstall.exe"
+
+        ; Finally, remove the installation directory if empty
+        RmDir "$INSTDIR"
+
+        ; Optionally delete the registry entry (if created)
+        ;!include "WinMessages.nsh"
+        ;RMDir /r "$APPDATA\FreeScribe"
+        ;RegDelete "HKCU\Software\ClinicianFOCUS\Toolbox"
+    SectionEnd
+
+
 ;--------------------------------
 ;Conditional Model Selection Page Display
-; Function to conditionally display the model selection page
+
     Function ConditionalModelPageCreate
         SectionGetFlags ${Section1} $0
         IntOp $0 $0 & ${SF_SELECTED}
@@ -94,7 +135,6 @@
 
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
-; Function to create the model selection page
     Function ModelPageCreate
         nsDialogs::Create 1018
         Pop $0
@@ -155,11 +195,13 @@
 
         ; Close the file
         FileClose $3 
+
+
     FunctionEnd
 
 ;--------------------------------
 ;Finish Page Customization using nsDialogs
-; Function to create the finish page
+
 Function FinishPageCreate
     nsDialogs::Create 1018
     Pop $0
@@ -168,6 +210,7 @@ Function FinishPageCreate
     ${EndIf}
 
     ; Conditionally create the checkboxes only if the respective sections were installed
+
     ${If} $LLM_Installed == 1
         ${NSD_CreateCheckbox} 0u 0u 100% 12u "Launch Local LLM"
         Pop $Checkbox_LLM
@@ -190,6 +233,7 @@ Function FinishPageCreate
 FunctionEnd
 
 Function FinishPageLeave
+
     ; Check if Local LLM was selected
     ${NSD_GetState} $Checkbox_LLM $0
     StrCmp $0 ${BST_CHECKED} 0 +2
@@ -208,7 +252,7 @@ FunctionEnd
 
 ;--------------------------------
 ;UTIL FUNCTIONS
-; Utility function to check for Docker installation
+
     Function CheckForDocker
         nsExec::ExecToStack 'docker-compose --version'
         Pop $0
@@ -221,35 +265,3 @@ FunctionEnd
             MessageBox MB_OK "Docker is not installed. Canceling install..."
             Abort
     FunctionEnd
-;--------------------------------
-;Install Type Page Customization using nsDialogs
-; Function to create the install type page
-Function InstallTypePageCreate
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
-
-    ; Create radio buttons for Basic and Advanced installation
-    ${NSD_CreateRadioButton} 0u 0u 100% 12u "Basic Installation"
-    Pop $0
-    ${NSD_SetState} $0 ${BST_CHECKED}
-
-    ${NSD_CreateRadioButton} 0u 14u 100% 12u "Advanced Installation"
-    Pop $1
-
-    nsDialogs::Show
-FunctionEnd
-
-Function InstallTypePageLeave
-    ; Check which installation type was selected
-    ${NSD_GetState} $0 $2
-    ${If} $2 == ${BST_CHECKED}
-        SectionSetFlags ${BasicSection} ${SF_SELECTED}
-        SectionSetFlags ${AdvancedSection} 0
-    ${Else}
-        SectionSetFlags ${BasicSection} 0
-        SectionSetFlags ${AdvancedSection} ${SF_SELECTED}
-    ${EndIf}
-FunctionEnd
