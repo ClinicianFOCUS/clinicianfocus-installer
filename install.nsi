@@ -1,9 +1,10 @@
 ;--------------------------------
 ;Include Modern UI and nsDialogs
-
+; Include necessary NSIS plugins for modern UI and dialogs
     !include "MUI2.nsh"
     !include "nsDialogs.nsh"
 
+    ; Declare variables for checkboxes and installation status
     Var Checkbox_LLM
     Var Checkbox_Speech2Text
     Var Checkbox_FreeScribe
@@ -17,7 +18,7 @@
 
 ;--------------------------------
 ;General
-
+; General settings for the installer
     Name "ClinicianFOCUS Toolbox Installer"
     OutFile "clinicianfocus_toolbox-installer.exe"
 
@@ -30,7 +31,7 @@
 
 ;--------------------------------
 ;Pages
-
+; Define the pages for the installer
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
@@ -45,7 +46,7 @@
 
 ;--------------------------------
 ;Installer Sections
-
+; Define the sections for different components to be installed
     Section "Install Local-LLM-Container" Section1
         WriteUninstaller "$INSTDIR\uninstall.exe"
         Call CheckForDocker
@@ -64,19 +65,16 @@
     SectionEnd
 
     Section "Install Freescribe Client" Section3 
-
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
         File ".\freescribe\FreeScribeInstaller_windows.exe"
-
         ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /D=$APPDATA\FreeScribe'
-
         StrCpy $FreeScribe_Installed 1
     SectionEnd
 
 ;--------------------------------
 ;Conditional Model Selection Page Display
-
+; Function to conditionally display the model selection page
     Function ConditionalModelPageCreate
         SectionGetFlags ${Section1} $0
         IntOp $0 $0 & ${SF_SELECTED}
@@ -87,7 +85,7 @@
 
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
-
+; Function to create the model selection page
     Function ModelPageCreate
         nsDialogs::Create 1018
         Pop $0
@@ -113,7 +111,6 @@
     FunctionEnd
 
     Function ModelPageLeave
-
         ${NSD_GetText} $DropDown_Model $1  # $0 will hold the user input
         StrCmp $1 "Custom" 0 +2
         MessageBox MB_OK "Please read the documentation for custom model use. This is for advanced users only."
@@ -149,13 +146,11 @@
 
         ; Close the file
         FileClose $3 
-
-
     FunctionEnd
 
 ;--------------------------------
 ;Finish Page Customization using nsDialogs
-
+; Function to create the finish page
 Function FinishPageCreate
     nsDialogs::Create 1018
     Pop $0
@@ -164,7 +159,6 @@ Function FinishPageCreate
     ${EndIf}
 
     ; Conditionally create the checkboxes only if the respective sections were installed
-
     ${If} $LLM_Installed == 1
         ${NSD_CreateCheckbox} 0u 0u 100% 12u "Launch Local LLM"
         Pop $Checkbox_LLM
@@ -187,7 +181,6 @@ Function FinishPageCreate
 FunctionEnd
 
 Function FinishPageLeave
-
     ; Check if Local LLM was selected
     ${NSD_GetState} $Checkbox_LLM $0
     StrCmp $0 ${BST_CHECKED} 0 +2
@@ -206,7 +199,7 @@ FunctionEnd
 
 ;--------------------------------
 ;UTIL FUNCTIONS
-
+; Utility function to check for Docker installation
     Function CheckForDocker
         nsExec::ExecToStack 'docker-compose --version'
         Pop $0
