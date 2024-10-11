@@ -28,11 +28,11 @@ jobs:
 
       - name: Install release from repo3
         run: |
-          curl -s https://api.github.com/repos/clinicianfocus/freescribe/releases/latest \
-          | grep "*installer.exe" \
-          | cut -d : -f 2,3 \
-          | tr -d \" \
-          | wget -qi -
+          curl -s https://api.github.com/repos/clinicianfocus/freescribe/releases/latest | 
+          grep "browser_download_url.*windows.exe" | 
+          cut -d : -f 2,3 | 
+          tr -d \" | 
+          wget -i -
 
       - name: Debug
         run: |
