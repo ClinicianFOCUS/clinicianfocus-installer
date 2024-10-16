@@ -1,0 +1,76 @@
+name: Build Workflow
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      - name: Checkout Local LLM
+        uses: actions/checkout@v3
+        with:
+          repository: ClinicianFOCUS/local-llm-container
+          path: local-llm-container
+
+      - name: Checkout The Speech2Text Container
+        uses: actions/checkout@v3
+        with:
+          repository: ClinicianFOCUS/speech2text-container
+          path: speech2text-container
+
+      - name: Create the Freesctibe Directory
+        run: |
+          mkdir freescribe
+
+      - name: Get latest release
+        id: get_release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: release } = await github.rest.repos.getLatestRelease({
+              owner: 'ClinicianFOCUS',   // Replace with the repository owner's username
+              repo: 'FreeScribe'      // Replace with the repository name
+            });
+            const asset = release.assets.find(asset => asset.name.endsWith('FreeScribeInstaller_windows.exe'));
+            if (!asset) {
+              throw new Error('No executable found in the latest release assets.');
+            }
+            return asset.url;
+
+      - name: Download latest release EXE
+        run: |
+          curl -L -H "Accept: application/octet-stream" -o freescribe\FreeScribeInstaller_windows.exe ${{ steps.get_release.outputs.result }}
+
+      - name: Set up NSIS
+        uses: joncloud/makensis-action@1c9f4bf2ea0c771147db31a2f3a7f5d8705c0105 # v4.1 commit hash
+
+        # --
+
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            This is a automated release completed by GitHub Actions.
+
+      - name: Upload Installer
+        id: upload-installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{steps.create_release.outputs.upload_url}}
+          asset_path: clinicianfocus_toolbox-installer.exe
+          asset_name: ClinicianFOCUS_toolbox-installer.exe
+          asset_content_type: application/octet-stream
