@@ -128,8 +128,9 @@
         inetc::get /TIMEOUT=30000 "https://desktop.docker.com/win/stable/Docker%20Desktop%20Installer.exe" "$TEMP\DockerInstaller.exe" /END
         Pop $R0 ;Get the return value
         ${If} $R0 == "OK"
-            ; ExecWait '"$TEMP\DockerInstaller.exe" install --quiet'
+            ExecWait '"$TEMP\DockerInstaller.exe" install --quiet'
             Delete "$TEMP\DockerInstaller.exe"
+            StrCpy $Docker_Installed 1
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
         ${Else}
             MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
@@ -157,6 +158,8 @@
             
             ; Set WSL 2 as the default version
             ExecWait 'wsl --set-default-version 2'
+            
+            StrCpy $WSL_Installed 1
         ${Else}
             MessageBox MB_OK "WSL2 download failed (Error: $R0). Please install WSL2 manually after the installation."
         ${EndIf}
