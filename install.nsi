@@ -22,6 +22,10 @@
     Var Docker_Installed
     Var WSL_Installed
 
+    Var Docker_Installed_NotificationDone
+    Var WSL_Installed_NotificationDone
+
+
 ;--------------------------------
 ;General
 ; Set general installer properties
@@ -68,7 +72,10 @@
             ${If} $Docker_Installed == 0
                 Call InstallDocker
             ${Else}
+                ${If} $Docker_Installed_NotificationDone == 0
                     MessageBox MB_OK "Docker is already installed on your system."
+                    StrCpy $Docker_Installed_NotificationDone 1
+                ${EndIf}
             ${EndIf}
         SectionEnd
 
@@ -76,7 +83,10 @@
             ${If} $WSL_Installed == 0
                 Call InstallWSL2
             ${Else}
-                MessageBox MB_OK "WSL2 is already installed on your system."
+                ${If} $WSL_Installed_NotificationDone == 0
+                    MessageBox MB_OK "WSL2 is already installed on your system."
+                    StrCpy $WSL_Installed_NotificationDone 1
+                ${EndIf}
             ${EndIf}
         SectionEnd
     SectionGroupEnd
@@ -93,7 +103,9 @@
             ${If} $Docker_Installed == 0
                 Call InstallDocker
             ${Else}
+                ${If} $Docker_Installed_NotificationDone == 0
                     MessageBox MB_OK "Docker is already installed on your system."
+                ${EndIf}
             ${EndIf}
         SectionEnd
 
@@ -101,7 +113,9 @@
             ${If} $WSL_Installed == 0
                 Call InstallWSL2
             ${Else}
-                MessageBox MB_OK "WSL2 is already installed on your system."
+                ${If} $WSL_Installed_NotificationDone == 0
+                    MessageBox MB_OK "WSL2 is already installed on your system."
+                ${EndIf}
             ${EndIf}
         SectionEnd
     SectionGroupEnd
@@ -131,7 +145,11 @@
             ExecWait '"$TEMP\DockerInstaller.exe" install --quiet'
             Delete "$TEMP\DockerInstaller.exe"
             StrCpy $Docker_Installed 1
+            StrCpy $Docker_Installed_NotificationDone 1
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
+
+            ; Add message box with instructions
+            MessageBox MB_OK "Docker Desktop has been launched. Please follow these steps:$\n$\n1. Accept the Docker license agreement$\n2. Log in to your Docker account (or create one if needed)$\n3. Complete the Docker survey (optional)$\n4. Wait for Docker to fully start before launching containers$\n$\nClick OK when you've completed these steps and Docker is running."
         ${Else}
             MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
             OpenDockerPage:
@@ -160,6 +178,7 @@
             ExecWait 'wsl --set-default-version 2'
             
             StrCpy $WSL_Installed 1
+            StrCpy $WSL_Installed_NotificationDone 1
         ${Else}
             MessageBox MB_OK "WSL2 download failed (Error: $R0). Please install WSL2 manually after the installation."
         ${EndIf}
@@ -173,6 +192,9 @@
             MessageBox MB_OK|MB_ICONSTOP "This installer requires Windows 10 or later.$\nPlease upgrade your operating system and try again."
             Quit
         ${EndIf}
+
+        StrCpy $WSL_Installed_NotificationDone 0
+        StrCpy $Docker_Installed_NotificationDone 0
 
         !insertmacro SetSectionFlag ${SEC_UNINSTALLER} ${SF_RO} 
 
