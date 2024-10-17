@@ -1,12 +1,13 @@
 ;--------------------------------
 ;Include Modern UI and nsDialogs
-
+; Include necessary NSIS plugins and libraries
     !include "MUI2.nsh"
     !include "nsDialogs.nsh"
     !include WinVer.nsh
     !include LogicLib.nsh
     !include Sections.nsh
 
+    ; Declare variables for checkboxes and installation status
     Var Checkbox_LLM
     Var Checkbox_Speech2Text
     Var Checkbox_FreeScribe
@@ -23,7 +24,7 @@
 
 ;--------------------------------
 ;General
-
+; Set general installer properties
     Name "ClinicianFOCUS Toolbox Installer"
     OutFile "clinicianfocus_toolbox-installer.exe"
 
@@ -36,7 +37,7 @@
 
 ;--------------------------------
 ;Pages
-
+; Define the installer pages
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
     Page custom DependenciesPageCreate DependenciesPageLeave
     !insertmacro MUI_PAGE_COMPONENTS
@@ -52,8 +53,9 @@
 
 ;--------------------------------
 ;Installer Sections
-
+; Define the installer sections
     Section "Install Local-LLM-Container" Section1
+        ; Create directories for Local LLM Container
         CreateDirectory "$INSTDIR\local-llm-container"
         CreateDirectory "$INSTDIR\local-llm-container\models"
         SetOutPath "$INSTDIR\local-llm-container"
@@ -62,6 +64,7 @@
     SectionEnd
 
     Section "Install Speech2Text-Container" Section2
+        ; Create directories for Speech2Text Container
         CreateDirectory "$INSTDIR\speech2text-container"
         SetOutPath "$INSTDIR\speech2text-container"
         File ".\speech2text-container\*.*"
@@ -69,16 +72,19 @@
     SectionEnd
 
     Section "Install Freescribe Client" Section3 
+        ; Create directories for Freescribe Client
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
         File ".\freescribe\FreeScribeInstaller_windows.exe"
 
+        ; Execute Freescribe installer silently
         ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /D=$APPDATA\FreeScribe'
 
         StrCpy $FreeScribe_Installed 1
     SectionEnd
 
     Section "Uninstaller" Section4
+        ; Write uninstaller executable
         WriteUninstaller "$INSTDIR\uninstall.exe"
     SectionEnd
 
@@ -123,7 +129,7 @@
 
 ;--------------------------------
 ; On installer start
-
+; Define actions to take when the installer starts
     Function .onInit
         ${IfNot} ${AtLeastWin10}
             MessageBox MB_OK|MB_ICONSTOP "This installer requires Windows 10 or later.$\nPlease upgrade your operating system and try again."
@@ -135,7 +141,7 @@
 
 ;--------------------------------
 ;Uninstaller Section
-
+; Define the uninstaller section
     Section "Uninstall"
         ; Close all docker containers
         ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" down'
@@ -168,7 +174,7 @@
 
 ;--------------------------------
 ;Conditional Model Selection Page Display
-
+; Define the conditional model selection page
     Function ConditionalModelPageCreate
         SectionGetFlags ${Section1} $0
         IntOp $0 $0 & ${SF_SELECTED}
@@ -179,7 +185,7 @@
 
 ;--------------------------------
 ;Dependencies Page
-
+; Define the dependencies page
     Function DependenciesPageCreate
         nsDialogs::Create 1018
         Pop $0
@@ -220,6 +226,7 @@
 
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
+; Define the model selection page
     Function ModelPageCreate
         nsDialogs::Create 1018
         Pop $0
@@ -284,7 +291,7 @@
 
 ;--------------------------------
 ;Finish Page Customization using nsDialogs
-
+; Define the finish page
 Function FinishPageCreate
     nsDialogs::Create 1018
     Pop $0
