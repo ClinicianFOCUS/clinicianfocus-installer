@@ -3,6 +3,7 @@
 
     !include "MUI2.nsh"
     !include "nsDialogs.nsh"
+    !include WinVer.nsh
     !include LogicLib.nsh
     !include Sections.nsh
 
@@ -18,6 +19,7 @@
     Var Input_HFToken
 
     Var Checkbox_InstallDocker
+    Var Checkbox_InstallWSL2
 
 ;--------------------------------
 ;General
@@ -67,7 +69,6 @@
     SectionEnd
 
     Section "Install Freescribe Client" Section3 
-
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
         File ".\freescribe\FreeScribeInstaller_windows.exe"
@@ -79,7 +80,6 @@
 
     Section "Uninstaller" Section4
         WriteUninstaller "$INSTDIR\uninstall.exe"
-
     SectionEnd
 
     Section "Install Docker" SectionDocker      
@@ -89,7 +89,7 @@
         ${If} $R0 == "OK"
             ; ExecWait '"$TEMP\DockerInstaller.exe" install --quiet'
             Delete "$TEMP\DockerInstaller.exe"
-            Exec "$PROGRAMFILES/Docker/Docker/Docker Desktop.exe"
+            Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
         ${Else}
             MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
             OpenDockerPage:
@@ -99,13 +99,39 @@
         SkipDockerInstall:
     SectionEnd
 
+    Section "Install WSL2" SectionWSL2
+        ; Download the WSL2 update package
+        inetc::get /TIMEOUT=30000 "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi" "$TEMP\wsl_update_x64.msi" /END
+        Pop $R0 ;Get the return value
+        ${If} $R0 == "OK"
+            ; Install WSL2 update package silently
+            ExecWait 'msiexec /i "$TEMP\wsl_update_x64.msi" /qn'
+            Delete "$TEMP\wsl_update_x64.msi"
+            
+            ; Enable WSL feature
+            ExecWait 'dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart'
+            
+            ; Enable Virtual Machine feature
+            ExecWait 'dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart'
+            
+            ; Set WSL 2 as the default version
+            ExecWait 'wsl --set-default-version 2'
+        ${Else}
+            MessageBox MB_OK "WSL2 download failed (Error: $R0). Please install WSL2 manually after the installation."
+        ${EndIf}
+    SectionEnd
+
 ;--------------------------------
 ; On installer start
 
     Function .onInit
-          !insertmacro SetSectionFlag ${Section4} ${SF_RO} 
+        ${IfNot} ${AtLeastWin10}
+            MessageBox MB_OK|MB_ICONSTOP "This installer requires Windows 10 or later.$\nPlease upgrade your operating system and try again."
+            Quit
+        ${EndIf}
+    
+        !insertmacro SetSectionFlag ${Section4} ${SF_RO} 
     FunctionEnd
-
 
 ;--------------------------------
 ;Uninstaller Section
@@ -140,7 +166,6 @@
         ;RegDelete "HKCU\Software\ClinicianFOCUS\Toolbox"
     SectionEnd
 
-
 ;--------------------------------
 ;Conditional Model Selection Page Display
 
@@ -167,6 +192,10 @@
         Pop $Checkbox_InstallDocker
         ${NSD_SetState} $Checkbox_InstallDocker ${BST_CHECKED}
 
+        ${NSD_CreateCheckbox} 10u 34u 100% 12u "Install WSL2 (required for Docker)"
+        Pop $Checkbox_InstallWSL2
+        ${NSD_SetState} $Checkbox_InstallWSL2 ${BST_CHECKED}
+
         nsDialogs::Show
     FunctionEnd
 
@@ -178,10 +207,16 @@
             !insertmacro UnselectSection ${SectionDocker}
         ${EndIf}
 
-        !insertmacro SetSectionFlag ${SectionDocker} ${SF_RO} 
-    FunctionEnd
+        ${NSD_GetState} $Checkbox_InstallWSL2 $0
+        ${If} $0 == ${BST_CHECKED}
+            !insertmacro SelectSection ${SectionWSL2}
+        ${Else}
+            !insertmacro UnselectSection ${SectionWSL2}
+        ${EndIf}
 
-;--------------------------------
+        !insertmacro SetSectionFlag ${SectionDocker} ${SF_RO} 
+        !insertmacro SetSectionFlag ${SectionWSL2} ${SF_RO} 
+    FunctionEnd
 
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
@@ -245,8 +280,6 @@
 
         ; Close the file
         FileClose $3 
-
-
     FunctionEnd
 
 ;--------------------------------
@@ -283,7 +316,6 @@ Function FinishPageCreate
 FunctionEnd
 
 Function FinishPageLeave
-
     ; Check if Local LLM was selected
     ${NSD_GetState} $Checkbox_LLM $0
     StrCmp $0 ${BST_CHECKED} 0 +2
