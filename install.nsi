@@ -19,16 +19,8 @@
     Var DropDown_Model
     Var Input_HFToken
 
-    Var Checkbox_InstallDocker
-    Var Checkbox_InstallWSL2
-
     Var Docker_Installed
     Var WSL_Installed
-
-    Var Label_DockerStatus
-    Var Label_WSLStatus
-
-    Var Dialog
 
 ;--------------------------------
 ;General
@@ -47,7 +39,7 @@
 ;Pages
 ; Define the installer pages
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
-    Page custom DependenciesPageCreate DependenciesPageLeave
+    ; Page custom DependenciesPageCreate DependenciesPageLeave
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     Page custom ConditionalModelPageCreate ModelPageLeave
@@ -62,24 +54,59 @@
 ;--------------------------------
 ;Installer Sections
 ; Define the installer sections
-    Section "Install Local-LLM-Container" Section1
-        ; Create directories for Local LLM Container
-        CreateDirectory "$INSTDIR\local-llm-container"
-        CreateDirectory "$INSTDIR\local-llm-container\models"
-        SetOutPath "$INSTDIR\local-llm-container"
-        File ".\local-llm-container\*.*"
-        StrCpy $LLM_Installed 1
-    SectionEnd
+    SectionGroup "Local LLM Container" SEC_GROUP_LLM
+        Section "Local-LLM-Container Module" SEC_LLM
+            
+            CreateDirectory "$INSTDIR\local-llm-container"
+            CreateDirectory "$INSTDIR\local-llm-container\models"
+            SetOutPath "$INSTDIR\local-llm-container"
+            File ".\local-llm-container\*.*"
+            StrCpy $LLM_Installed 1
+        SectionEnd
 
-    Section "Install Speech2Text-Container" Section2
-        ; Create directories for Speech2Text Container
-        CreateDirectory "$INSTDIR\speech2text-container"
-        SetOutPath "$INSTDIR\speech2text-container"
-        File ".\speech2text-container\*.*"
-        StrCpy $Speech2Text_Installed 1
-    SectionEnd
+        Section "Docker for LLM" SEC_DOCKER_LLM
+            ${If} $Docker_Installed == 0
+                Call InstallDocker
+            ${Else}
+                    MessageBox MB_OK "Docker is already installed on your system."
+            ${EndIf}
+        SectionEnd
 
-    Section "Install Freescribe Client" Section3 
+        Section "WSL2 for LLM" SEC_WSL_LLM
+            ${If} $WSL_Installed == 0
+                Call InstallWSL2
+            ${Else}
+                MessageBox MB_OK "WSL2 is already installed on your system."
+            ${EndIf}
+        SectionEnd
+    SectionGroupEnd
+
+    SectionGroup "Speech to Text Container" SEC_GROUP_S2T
+        Section "Speech2Text-Container Module" SEC_S2T
+            CreateDirectory "$INSTDIR\speech2text-container"
+            SetOutPath "$INSTDIR\speech2text-container"
+            File ".\speech2text-container\*.*"
+            StrCpy $Speech2Text_Installed 1
+        SectionEnd
+
+        Section "Docker for Speech2Text" SEC_DOCKER_S2T
+            ${If} $Docker_Installed == 0
+                Call InstallDocker
+            ${Else}
+                    MessageBox MB_OK "Docker is already installed on your system."
+            ${EndIf}
+        SectionEnd
+
+        Section "WSL2 for Speech2Text" SEC_WSL_S2T
+            ${If} $WSL_Installed == 0
+                Call InstallWSL2
+            ${Else}
+                MessageBox MB_OK "WSL2 is already installed on your system."
+            ${EndIf}
+        SectionEnd
+    SectionGroupEnd
+
+    Section "Freescribe Client" SEC_FREESCRIBE
         ; Create directories for Freescribe Client
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
@@ -91,12 +118,12 @@
         StrCpy $FreeScribe_Installed 1
     SectionEnd
 
-    Section "Uninstaller" Section4
+    Section "Uninstaller" SEC_UNINSTALLER
         ; Write uninstaller executable
         WriteUninstaller "$INSTDIR\uninstall.exe"
     SectionEnd
 
-    Section "Install Docker" SectionDocker      
+    Function InstallDocker
         ; Attempt to download Docker installer using inetc::get
         inetc::get /TIMEOUT=30000 "https://desktop.docker.com/win/stable/Docker%20Desktop%20Installer.exe" "$TEMP\DockerInstaller.exe" /END
         Pop $R0 ;Get the return value
@@ -111,9 +138,9 @@
                 MessageBox MB_OK "Please download and install Docker manually, then click OK to continue with the installation."
         ${EndIf}
         SkipDockerInstall:
-    SectionEnd
+    FunctionEnd
 
-    Section "Install WSL2" SectionWSL2
+    Function InstallWSL2
         ; Download the WSL2 update package
         inetc::get /TIMEOUT=30000 "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi" "$TEMP\wsl_update_x64.msi" /END
         Pop $R0 ;Get the return value
@@ -133,7 +160,7 @@
         ${Else}
             MessageBox MB_OK "WSL2 download failed (Error: $R0). Please install WSL2 manually after the installation."
         ${EndIf}
-    SectionEnd
+    FunctionEnd
 
 ;--------------------------------
 ; On installer start
@@ -143,8 +170,8 @@
             MessageBox MB_OK|MB_ICONSTOP "This installer requires Windows 10 or later.$\nPlease upgrade your operating system and try again."
             Quit
         ${EndIf}
-    
-        !insertmacro SetSectionFlag ${Section4} ${SF_RO} 
+
+        !insertmacro SetSectionFlag ${SEC_UNINSTALLER} ${SF_RO} 
 
         ; Check if Docker is installed and running
         nsExec::ExecToStack 'docker --version'
@@ -152,6 +179,8 @@
         Pop $1  ; Output
         ${If} $0 == 0
             StrCpy $Docker_Installed 1
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_LLM} "Docker is already installed"
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_S2T} "Docker is already installed"
         ${Else}
             StrCpy $Docker_Installed 0
         ${EndIf}
@@ -160,10 +189,33 @@
         ReadRegDWORD $R0 HKLM "SYSTEM\CurrentControlSet\Services\WslService" "Start"
         ${If} $R0 != ""
             StrCpy $WSL_Installed 1
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_LLM} "WSL2 is already installed"
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_S2T} "WSL2 is already installed"
         ${Else}
             StrCpy $WSL_Installed 0
         ${EndIf}
+
+        ; Set up section dependencies
+        SectionGetFlags ${SEC_LLM} $0
+        IntOp $0 $0 | ${SF_EXPAND}
+        SectionSetFlags ${SEC_LLM} $0
+
+        SectionGetFlags ${SEC_S2T} $0
+        IntOp $0 $0 | ${SF_EXPAND}
+        SectionSetFlags ${SEC_S2T} $0
     FunctionEnd
+
+;--------------------------------
+;Descriptions
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_LLM} "Install Local LLM Container"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_LLM} "Install Docker for Local LLM (required if not already installed)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_LLM} "Install WSL2 for Local LLM (required for Docker)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_S2T} "Install Speech2Text Container"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_S2T} "Install Docker for Speech2Text (required if not already installed)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_S2T} "Install WSL2 for Speech2Text (required for Docker)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_FREESCRIBE} "Install Freescribe Client"
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;--------------------------------
 ;Uninstaller Section
@@ -202,86 +254,12 @@
 ;Conditional Model Selection Page Display
 ; Define the conditional model selection page
     Function ConditionalModelPageCreate
-        SectionGetFlags ${Section1} $0
+        SectionGetFlags ${SEC_LLM} $0
         IntOp $0 $0 & ${SF_SELECTED}
         ${If} $0 == ${SF_SELECTED}
             Call ModelPageCreate
         ${EndIf}
     FunctionEnd
-
-;--------------------------------
-;Dependencies Page
-; Define the dependencies page
-    Function DependenciesPageCreate
-        nsDialogs::Create 1018
-        Pop $Dialog
-        ${If} $Dialog == error
-            Abort
-        ${EndIf}
-
-        ${NSD_CreateLabel} 0 0 100% 20u "Check dependencies to install:"
-        
-        ${NSD_CreateCheckbox} 10u 20u 100% 12u "Install Docker (if not already installed)"
-        Pop $Checkbox_InstallDocker
-        ${NSD_SetState} $Checkbox_InstallDocker ${BST_CHECKED}
-
-        ${NSD_CreateLabel} 20u 34u 100% 12u ""
-        Pop $Label_DockerStatus
-
-        ${NSD_CreateCheckbox} 10u 48u 100% 12u "Install WSL2 (required for Docker)"
-        Pop $Checkbox_InstallWSL2
-        ${NSD_SetState} $Checkbox_InstallWSL2 ${BST_CHECKED}
-
-        ${NSD_CreateLabel} 20u 62u 100% 12u ""
-        Pop $Label_WSLStatus
-
-        ; Set a timer to call the update function after the dialog is shown
-        ${NSD_CreateTimer} UpdateDependenciesStatus 100
-
-        nsDialogs::Show
-    FunctionEnd
-
-    Function UpdateDependenciesStatus
-        ${NSD_KillTimer} UpdateDependenciesStatus
-
-        ; Update Docker status
-        ${If} $Docker_Installed == 1
-            EnableWindow $Checkbox_InstallDocker 0
-            ${NSD_SetState} $Checkbox_InstallDocker ${BST_UNCHECKED}
-            ${NSD_SetText} $Label_DockerStatus "Docker is already installed."
-        ${Else}
-            ${NSD_SetText} $Label_DockerStatus ""
-        ${EndIf}
-
-        ; Update WSL status
-        ${If} $WSL_Installed == 1
-            EnableWindow $Checkbox_InstallWSL2 0
-            ${NSD_SetState} $Checkbox_InstallWSL2 ${BST_UNCHECKED}
-            ${NSD_SetText} $Label_WSLStatus "WSL2 is already installed."
-        ${Else}
-            ${NSD_SetText} $Label_WSLStatus ""
-        ${EndIf}
-    FunctionEnd
-
-    Function DependenciesPageLeave
-        ${NSD_GetState} $Checkbox_InstallDocker $0
-        ${If} $0 == ${BST_CHECKED}
-            !insertmacro SelectSection ${SectionDocker}
-        ${Else}
-            !insertmacro UnselectSection ${SectionDocker}
-        ${EndIf}
-
-        ${NSD_GetState} $Checkbox_InstallWSL2 $0
-        ${If} $0 == ${BST_CHECKED}
-            !insertmacro SelectSection ${SectionWSL2}
-        ${Else}
-            !insertmacro UnselectSection ${SectionWSL2}
-        ${EndIf}
-
-        !insertmacro SetSectionFlag ${SectionDocker} ${SF_RO} 
-        !insertmacro SetSectionFlag ${SectionWSL2} ${SF_RO} 
-    FunctionEnd
-
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
 ; Define the model selection page
