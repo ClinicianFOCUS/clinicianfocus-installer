@@ -22,6 +22,14 @@
     Var Checkbox_InstallDocker
     Var Checkbox_InstallWSL2
 
+    Var Docker_Installed
+    Var WSL_Installed
+
+    Var Label_DockerStatus
+    Var Label_WSLStatus
+
+    Var Dialog
+
 ;--------------------------------
 ;General
 ; Set general installer properties
@@ -137,6 +145,24 @@
         ${EndIf}
     
         !insertmacro SetSectionFlag ${Section4} ${SF_RO} 
+
+        ; Check if Docker is installed and running
+        nsExec::ExecToStack 'docker --version'
+        Pop $0  ; Return value
+        Pop $1  ; Output
+        ${If} $0 == 0
+            StrCpy $Docker_Installed 1
+        ${Else}
+            StrCpy $Docker_Installed 0
+        ${EndIf}
+
+        ; Check if WSL is installed
+        ReadRegDWORD $R0 HKLM "SYSTEM\CurrentControlSet\Services\WslService" "Start"
+        ${If} $R0 != ""
+            StrCpy $WSL_Installed 1
+        ${Else}
+            StrCpy $WSL_Installed 0
+        ${EndIf}
     FunctionEnd
 
 ;--------------------------------
@@ -188,21 +214,53 @@
 ; Define the dependencies page
     Function DependenciesPageCreate
         nsDialogs::Create 1018
-        Pop $0
-        ${If} $0 == error
+        Pop $Dialog
+        ${If} $Dialog == error
             Abort
         ${EndIf}
 
         ${NSD_CreateLabel} 0 0 100% 20u "Check dependencies to install:"
+        
         ${NSD_CreateCheckbox} 10u 20u 100% 12u "Install Docker (if not already installed)"
         Pop $Checkbox_InstallDocker
         ${NSD_SetState} $Checkbox_InstallDocker ${BST_CHECKED}
 
-        ${NSD_CreateCheckbox} 10u 34u 100% 12u "Install WSL2 (required for Docker)"
+        ${NSD_CreateLabel} 20u 34u 100% 12u ""
+        Pop $Label_DockerStatus
+
+        ${NSD_CreateCheckbox} 10u 48u 100% 12u "Install WSL2 (required for Docker)"
         Pop $Checkbox_InstallWSL2
         ${NSD_SetState} $Checkbox_InstallWSL2 ${BST_CHECKED}
 
+        ${NSD_CreateLabel} 20u 62u 100% 12u ""
+        Pop $Label_WSLStatus
+
+        ; Set a timer to call the update function after the dialog is shown
+        ${NSD_CreateTimer} UpdateDependenciesStatus 100
+
         nsDialogs::Show
+    FunctionEnd
+
+    Function UpdateDependenciesStatus
+        ${NSD_KillTimer} UpdateDependenciesStatus
+
+        ; Update Docker status
+        ${If} $Docker_Installed == 1
+            EnableWindow $Checkbox_InstallDocker 0
+            ${NSD_SetState} $Checkbox_InstallDocker ${BST_UNCHECKED}
+            ${NSD_SetText} $Label_DockerStatus "Docker is already installed."
+        ${Else}
+            ${NSD_SetText} $Label_DockerStatus ""
+        ${EndIf}
+
+        ; Update WSL status
+        ${If} $WSL_Installed == 1
+            EnableWindow $Checkbox_InstallWSL2 0
+            ${NSD_SetState} $Checkbox_InstallWSL2 ${BST_UNCHECKED}
+            ${NSD_SetText} $Label_WSLStatus "WSL2 is already installed."
+        ${Else}
+            ${NSD_SetText} $Label_WSLStatus ""
+        ${EndIf}
     FunctionEnd
 
     Function DependenciesPageLeave
