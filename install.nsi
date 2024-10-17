@@ -17,6 +17,8 @@
     Var DropDown_Model
     Var Input_HFToken
 
+    Var Checkbox_InstallDocker
+
 ;--------------------------------
 ;General
 
@@ -34,6 +36,7 @@
 ;Pages
 
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
+    Page custom DependenciesPageCreate DependenciesPageLeave
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     Page custom ConditionalModelPageCreate ModelPageLeave
@@ -49,7 +52,6 @@
 ;Installer Sections
 
     Section "Install Local-LLM-Container" Section1
-        Call CheckForDocker
         CreateDirectory "$INSTDIR\local-llm-container"
         CreateDirectory "$INSTDIR\local-llm-container\models"
         SetOutPath "$INSTDIR\local-llm-container"
@@ -78,6 +80,23 @@
     Section "Uninstaller" Section4
         WriteUninstaller "$INSTDIR\uninstall.exe"
 
+    SectionEnd
+
+    Section "Install Docker" SectionDocker      
+        ; Attempt to download Docker installer using inetc::get
+        inetc::get /TIMEOUT=30000 "https://desktop.docker.com/win/stable/Docker%20Desktop%20Installer.exe" "$TEMP\DockerInstaller.exe" /END
+        Pop $R0 ;Get the return value
+        ${If} $R0 == "OK"
+            ; ExecWait '"$TEMP\DockerInstaller.exe" install --quiet'
+            Delete "$TEMP\DockerInstaller.exe"
+            Exec "$PROGRAMFILES/Docker/Docker/Docker Desktop.exe"
+        ${Else}
+            MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
+            OpenDockerPage:
+                ExecShell "open" "https://www.docker.com/products/docker-desktop"
+                MessageBox MB_OK "Please download and install Docker manually, then click OK to continue with the installation."
+        ${EndIf}
+        SkipDockerInstall:
     SectionEnd
 
 ;--------------------------------
@@ -132,6 +151,37 @@
             Call ModelPageCreate
         ${EndIf}
     FunctionEnd
+
+;--------------------------------
+;Dependencies Page
+
+    Function DependenciesPageCreate
+        nsDialogs::Create 1018
+        Pop $0
+        ${If} $0 == error
+            Abort
+        ${EndIf}
+
+        ${NSD_CreateLabel} 0 0 100% 20u "Check dependencies to install:"
+        ${NSD_CreateCheckbox} 10u 20u 100% 12u "Install Docker (if not already installed)"
+        Pop $Checkbox_InstallDocker
+        ${NSD_SetState} $Checkbox_InstallDocker ${BST_CHECKED}
+
+        nsDialogs::Show
+    FunctionEnd
+
+    Function DependenciesPageLeave
+        ${NSD_GetState} $Checkbox_InstallDocker $0
+        ${If} $0 == ${BST_CHECKED}
+            !insertmacro SelectSection ${SectionDocker}
+        ${Else}
+            !insertmacro UnselectSection ${SectionDocker}
+        ${EndIf}
+
+        !insertmacro SetSectionFlag ${SectionDocker} ${SF_RO} 
+    FunctionEnd
+
+;--------------------------------
 
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
@@ -249,19 +299,3 @@ Function FinishPageLeave
     StrCmp $0 ${BST_CHECKED} 0 +2
         Exec '"$APPDATA\freescribe\freescribe-client.exe"'
 FunctionEnd
-
-;--------------------------------
-;UTIL FUNCTIONS
-
-    Function CheckForDocker
-        nsExec::ExecToStack 'docker-compose --version'
-        Pop $0
-        StrCmp $0 "0" +3 0
-            MessageBox MB_OK "Docker Compose is not installed. Canceling install..."
-            Abort
-        nsExec::ExecToStack 'docker --version'
-        Pop $0
-        StrCmp $0 "0" +3 0
-            MessageBox MB_OK "Docker is not installed. Canceling install..."
-            Abort
-    FunctionEnd
