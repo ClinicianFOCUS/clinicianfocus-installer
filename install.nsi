@@ -26,6 +26,11 @@
     Var Docker_Installed_NotificationDone
     Var WSL_Installed_NotificationDone
 
+    Var Input_WhisperAPIKey
+    Var DropDown_WhisperModel
+
+    Var WhisperAPIKey
+    Var WhisperModel
 
 ;--------------------------------
 ;General
@@ -48,6 +53,7 @@
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     Page custom ConditionalModelPageCreate ModelPageLeave
+    Page custom WhisperSettingsPageCreate WhisperSettingsPageLeave
     !insertmacro MUI_PAGE_INSTFILES
     Page custom FinishPageCreate FinishPageLeave
 
@@ -95,8 +101,25 @@
     SectionGroup "Speech to Text Container" SEC_GROUP_S2T
         Section "Speech2Text-Container Module" SEC_S2T
             CreateDirectory "$INSTDIR\speech2text-container"
+            
+            ; Save new env stuff to memory
+            FileOpen $4 "$INSTDIR\speech2text-container\.env" r
+            FileSeek $4 0 ; we want to start reading at the 1000th byte
+            FileRead $4 $1 ; we read until the end of line (including carriage return and new line) and save it to $1
+            FileRead $4 $2 ; read 10 characters from the next line
+            FileClose $4 ; and close the file
+            
+            ;; Copy in new files
             SetOutPath "$INSTDIR\speech2text-container"
             File ".\speech2text-container\*.*"
+
+            ; Set the new env stuff into env file since it just got replaced
+            FileOpen $4 "$INSTDIR\speech2text-container\.env" w
+            FileWrite $4 $1
+            FileWrite $4 $2
+            FileClose $4
+
+
             StrCpy $Speech2Text_Installed 1
         SectionEnd
 
@@ -230,6 +253,69 @@
         IntOp $0 $0 | ${SF_EXPAND}
         SectionSetFlags ${SEC_S2T} $0
     FunctionEnd
+
+;--------------------------------
+; Whisper Settings Page Customization using nsDialogs
+; Define the Whisper settings page
+Function WhisperSettingsPageCreate
+    nsDialogs::Create 1018
+
+    Pop $0
+    ${If} $0 == error
+        Abort
+    ${EndIf}
+
+    ; Create a label for the model selection
+    ${NSD_CreateLabel} 0u 30u 100% 12u "Select Whisper Model:"
+    ${NSD_CreateComboBox} 0u 44u 100% 12u ""
+    Pop $DropDown_WhisperModel
+
+    ; Add the model options to the drop-down
+    ${NSD_CB_AddString} $DropDown_WhisperModel "tiny"
+    ${NSD_CB_AddString} $DropDown_WhisperModel "base"
+    ${NSD_CB_AddString} $DropDown_WhisperModel "small"
+    ${NSD_CB_AddString} $DropDown_WhisperModel "medium"
+    ${NSD_CB_AddString} $DropDown_WhisperModel "large"
+
+    ; Set "medium" as the default and recommended selection
+    ${NSD_CB_SelectString} $DropDown_WhisperModel "medium"
+
+    ; Create a label for the API key input
+    ${NSD_CreateLabel} 0u 0u 100% 12u "Whisper API Key:"
+    ${NSD_CreateText} 0u 14u 100% 12u ""
+    Pop $Input_WhisperAPIKey
+
+    ; Display the dialog
+    nsDialogs::Show
+FunctionEnd
+
+Function WhisperSettingsPageLeave
+    ; Get the API key entered by the user
+    ${NSD_GetText} $Input_WhisperAPIKey $WhisperAPIKey
+
+    ; Get the selected Whisper model
+    ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  # $1 will hold the user input
+
+    ; Create the .env directories for the Whisper settings
+    CreateDirectory "$INSTDIR\speech2text-container"
+
+    ; Define the file path for the Whisper .env settings
+    StrCpy $0 "$INSTDIR\speech2text-container\.env"
+
+    ; Open the .env file for writing
+    FileOpen $3 $0 w
+    ${If} $3 == ""
+        MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
+        Abort
+    ${EndIf}
+
+    ; Write the API key and model selection to the .env file
+    FileWrite $3 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
+    FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
+
+    ; Close the file
+    FileClose $3
+FunctionEnd
 
 ;--------------------------------
 ;Descriptions
