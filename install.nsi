@@ -1,11 +1,13 @@
 ;--------------------------------
 ;Include Modern UI and nsDialogs
-
+; Include necessary NSIS plugins and libraries
     !include "MUI2.nsh"
     !include "nsDialogs.nsh"
+    !include WinVer.nsh
     !include LogicLib.nsh
     !include Sections.nsh
 
+    ; Declare variables for checkboxes and installation status
     Var Checkbox_LLM
     Var Checkbox_Speech2Text
     Var Checkbox_FreeScribe
@@ -17,9 +19,16 @@
     Var DropDown_Model
     Var Input_HFToken
 
+    Var Docker_Installed
+    Var WSL_Installed
+
+    Var Docker_Installed_NotificationDone
+    Var WSL_Installed_NotificationDone
+
+
 ;--------------------------------
 ;General
-
+; Set general installer properties
     Name "ClinicianFOCUS Toolbox Installer"
     OutFile "clinicianfocus_toolbox-installer.exe"
 
@@ -32,8 +41,9 @@
 
 ;--------------------------------
 ;Pages
-
+; Define the installer pages
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
+    ; Page custom DependenciesPageCreate DependenciesPageLeave
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     Page custom ConditionalModelPageCreate ModelPageLeave
@@ -47,50 +57,194 @@
 
 ;--------------------------------
 ;Installer Sections
+; Define the installer sections
+    SectionGroup "Local LLM Container" SEC_GROUP_LLM
+        Section "Local-LLM-Container Module" SEC_LLM
+            
+            CreateDirectory "$INSTDIR\local-llm-container"
+            CreateDirectory "$INSTDIR\local-llm-container\models"
+            SetOutPath "$INSTDIR\local-llm-container"
+            File ".\local-llm-container\*.*"
+            StrCpy $LLM_Installed 1
+        SectionEnd
 
-    Section "Install Local-LLM-Container" Section1
-        Call CheckForDocker
-        CreateDirectory "$INSTDIR\local-llm-container"
-        CreateDirectory "$INSTDIR\local-llm-container\models"
-        SetOutPath "$INSTDIR\local-llm-container"
-        File ".\local-llm-container\*.*"
-        StrCpy $LLM_Installed 1
-    SectionEnd
+        Section "Docker for LLM" SEC_DOCKER_LLM
+            ${If} $Docker_Installed == 0
+                Call InstallDocker
+            ${Else}
+                ${If} $Docker_Installed_NotificationDone == 0
+                    MessageBox MB_OK "Docker is already installed on your system."
+                    StrCpy $Docker_Installed_NotificationDone 1
+                ${EndIf}
+            ${EndIf}
+        SectionEnd
 
-    Section "Install Speech2Text-Container" Section2
-        CreateDirectory "$INSTDIR\speech2text-container"
-        SetOutPath "$INSTDIR\speech2text-container"
-        File ".\speech2text-container\*.*"
-        StrCpy $Speech2Text_Installed 1
-    SectionEnd
+        Section "WSL2 for LLM" SEC_WSL_LLM
+            ${If} $WSL_Installed == 0
+                Call InstallWSL2
+            ${Else}
+                ${If} $WSL_Installed_NotificationDone == 0
+                    MessageBox MB_OK "WSL2 is already installed on your system."
+                    StrCpy $WSL_Installed_NotificationDone 1
+                ${EndIf}
+            ${EndIf}
+        SectionEnd
+    SectionGroupEnd
 
-    Section "Install Freescribe Client" Section3 
+    SectionGroup "Speech to Text Container" SEC_GROUP_S2T
+        Section "Speech2Text-Container Module" SEC_S2T
+            CreateDirectory "$INSTDIR\speech2text-container"
+            SetOutPath "$INSTDIR\speech2text-container"
+            File ".\speech2text-container\*.*"
+            StrCpy $Speech2Text_Installed 1
+        SectionEnd
 
+        Section "Docker for Speech2Text" SEC_DOCKER_S2T
+            ${If} $Docker_Installed == 0
+                Call InstallDocker
+            ${Else}
+                ${If} $Docker_Installed_NotificationDone == 0
+                    MessageBox MB_OK "Docker is already installed on your system."
+                ${EndIf}
+            ${EndIf}
+        SectionEnd
+
+        Section "WSL2 for Speech2Text" SEC_WSL_S2T
+            ${If} $WSL_Installed == 0
+                Call InstallWSL2
+            ${Else}
+                ${If} $WSL_Installed_NotificationDone == 0
+                    MessageBox MB_OK "WSL2 is already installed on your system."
+                ${EndIf}
+            ${EndIf}
+        SectionEnd
+    SectionGroupEnd
+
+    Section "Freescribe Client" SEC_FREESCRIBE
+        ; Create directories for Freescribe Client
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
         File ".\freescribe\FreeScribeInstaller_windows.exe"
 
+        ; Execute Freescribe installer silently
         ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /D=$APPDATA\FreeScribe'
 
         StrCpy $FreeScribe_Installed 1
     SectionEnd
 
-    Section "Uninstaller" Section4
+    Section "Uninstaller" SEC_UNINSTALLER
+        ; Write uninstaller executable
         WriteUninstaller "$INSTDIR\uninstall.exe"
-
     SectionEnd
+
+    Function InstallDocker
+        ; Attempt to download Docker installer using inetc::get
+        inetc::get /TIMEOUT=30000 "https://desktop.docker.com/win/stable/Docker%20Desktop%20Installer.exe" "$TEMP\DockerInstaller.exe" /END
+        Pop $R0 ;Get the return value
+        ${If} $R0 == "OK"
+            ExecWait '"$TEMP\DockerInstaller.exe" install --quiet'
+            Delete "$TEMP\DockerInstaller.exe"
+            StrCpy $Docker_Installed 1
+            StrCpy $Docker_Installed_NotificationDone 1
+            Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
+
+            ; Add message box with instructions
+            MessageBox MB_OK "Docker Desktop has been launched. Please follow these steps:$\n$\n1. Accept the Docker license agreement$\n2. Log in to your Docker account (or create one if needed)$\n3. Complete the Docker survey (optional)$\n4. Wait for Docker to fully start before launching containers$\n$\nClick OK when you've completed these steps and Docker is running."
+        ${Else}
+            MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
+            OpenDockerPage:
+                ExecShell "open" "https://www.docker.com/products/docker-desktop"
+                MessageBox MB_OK "Please download and install Docker manually, then click OK to continue with the installation."
+        ${EndIf}
+        SkipDockerInstall:
+    FunctionEnd
+
+    Function InstallWSL2
+        ; Download the WSL2 update package
+        inetc::get /TIMEOUT=30000 "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi" "$TEMP\wsl_update_x64.msi" /END
+        Pop $R0 ;Get the return value
+        ${If} $R0 == "OK"
+            ; Install WSL2 update package silently
+            ExecWait 'msiexec /i "$TEMP\wsl_update_x64.msi" /qn'
+            Delete "$TEMP\wsl_update_x64.msi"
+            
+            ; Enable WSL feature
+            ExecWait 'dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart'
+            
+            ; Enable Virtual Machine feature
+            ExecWait 'dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart'
+            
+            ; Set WSL 2 as the default version
+            ExecWait 'wsl --set-default-version 2'
+            
+            StrCpy $WSL_Installed 1
+            StrCpy $WSL_Installed_NotificationDone 1
+        ${Else}
+            MessageBox MB_OK "WSL2 download failed (Error: $R0). Please install WSL2 manually after the installation."
+        ${EndIf}
+    FunctionEnd
 
 ;--------------------------------
 ; On installer start
-
+; Define actions to take when the installer starts
     Function .onInit
-          !insertmacro SetSectionFlag ${Section4} ${SF_RO} 
+        ${IfNot} ${AtLeastWin10}
+            MessageBox MB_OK|MB_ICONSTOP "This installer requires Windows 10 or later.$\nPlease upgrade your operating system and try again."
+            Quit
+        ${EndIf}
+
+        StrCpy $WSL_Installed_NotificationDone 0
+        StrCpy $Docker_Installed_NotificationDone 0
+
+        !insertmacro SetSectionFlag ${SEC_UNINSTALLER} ${SF_RO} 
+
+        ; Check if Docker is installed and running
+        nsExec::ExecToStack 'docker --version'
+        Pop $0  ; Return value
+        Pop $1  ; Output
+        ${If} $0 == 0
+            StrCpy $Docker_Installed 1
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_LLM} "Docker is already installed"
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_S2T} "Docker is already installed"
+        ${Else}
+            StrCpy $Docker_Installed 0
+        ${EndIf}
+
+        ; Check if WSL is installed
+        ReadRegDWORD $R0 HKLM "SYSTEM\CurrentControlSet\Services\WslService" "Start"
+        ${If} $R0 != ""
+            StrCpy $WSL_Installed 1
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_LLM} "WSL2 is already installed"
+            !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_S2T} "WSL2 is already installed"
+        ${Else}
+            StrCpy $WSL_Installed 0
+        ${EndIf}
+
+        ; Set up section dependencies
+        SectionGetFlags ${SEC_LLM} $0
+        IntOp $0 $0 | ${SF_EXPAND}
+        SectionSetFlags ${SEC_LLM} $0
+
+        SectionGetFlags ${SEC_S2T} $0
+        IntOp $0 $0 | ${SF_EXPAND}
+        SectionSetFlags ${SEC_S2T} $0
     FunctionEnd
 
+;--------------------------------
+;Descriptions
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_LLM} "Install Local LLM Container"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_LLM} "Install Docker for Local LLM (required if not already installed)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_LLM} "Install WSL2 for Local LLM (required for Docker)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_S2T} "Install Speech2Text Container"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_S2T} "Install Docker for Speech2Text (required if not already installed)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_S2T} "Install WSL2 for Speech2Text (required for Docker)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_FREESCRIBE} "Install Freescribe Client"
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;--------------------------------
 ;Uninstaller Section
-
+; Define the uninstaller section
     Section "Uninstall"
         ; Close all docker containers
         ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" down'
@@ -121,20 +275,19 @@
         ;RegDelete "HKCU\Software\ClinicianFOCUS\Toolbox"
     SectionEnd
 
-
 ;--------------------------------
 ;Conditional Model Selection Page Display
-
+; Define the conditional model selection page
     Function ConditionalModelPageCreate
-        SectionGetFlags ${Section1} $0
+        SectionGetFlags ${SEC_LLM} $0
         IntOp $0 $0 & ${SF_SELECTED}
         ${If} $0 == ${SF_SELECTED}
             Call ModelPageCreate
         ${EndIf}
     FunctionEnd
-
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
+; Define the model selection page
     Function ModelPageCreate
         nsDialogs::Create 1018
         Pop $0
@@ -195,13 +348,11 @@
 
         ; Close the file
         FileClose $3 
-
-
     FunctionEnd
 
 ;--------------------------------
 ;Finish Page Customization using nsDialogs
-
+; Define the finish page
 Function FinishPageCreate
     nsDialogs::Create 1018
     Pop $0
@@ -233,7 +384,6 @@ Function FinishPageCreate
 FunctionEnd
 
 Function FinishPageLeave
-
     ; Check if Local LLM was selected
     ${NSD_GetState} $Checkbox_LLM $0
     StrCmp $0 ${BST_CHECKED} 0 +2
@@ -249,19 +399,3 @@ Function FinishPageLeave
     StrCmp $0 ${BST_CHECKED} 0 +2
         Exec '"$APPDATA\freescribe\freescribe-client.exe"'
 FunctionEnd
-
-;--------------------------------
-;UTIL FUNCTIONS
-
-    Function CheckForDocker
-        nsExec::ExecToStack 'docker-compose --version'
-        Pop $0
-        StrCmp $0 "0" +3 0
-            MessageBox MB_OK "Docker Compose is not installed. Canceling install..."
-            Abort
-        nsExec::ExecToStack 'docker --version'
-        Pop $0
-        StrCmp $0 "0" +3 0
-            MessageBox MB_OK "Docker is not installed. Canceling install..."
-            Abort
-    FunctionEnd
