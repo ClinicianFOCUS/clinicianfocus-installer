@@ -1,6 +1,7 @@
 ;--------------------------------
 ;Include Modern UI and nsDialogs
 ; Include necessary NSIS plugins and libraries
+    !addplugindir "$NSISDIR\Plugins"
     !include "MUI2.nsh"
     !include "nsDialogs.nsh"
     !include WinVer.nsh
