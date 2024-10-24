@@ -103,6 +103,17 @@
             ${EndIf}
         SectionEnd
 
+        Section "WSL2 for LLM" SEC_WSL_LLM
+            ${If} $WSL_Installed == 0
+                Call InstallWSL2
+            ${Else}
+                ${If} $WSL_Installed_NotificationDone == 0
+                    MessageBox MB_OK "WSL2 is already installed on your system."
+                    StrCpy $WSL_Installed_NotificationDone 1
+                ${EndIf}
+            ${EndIf}
+        SectionEnd
+
         Section "Docker for LLM" SEC_DOCKER_LLM
             ${If} $Docker_Installed == 0
                 Call InstallDocker
@@ -114,16 +125,6 @@
             ${EndIf}
         SectionEnd
 
-        Section "WSL2 for LLM" SEC_WSL_LLM
-            ${If} $WSL_Installed == 0
-                Call InstallWSL2
-            ${Else}
-                ${If} $WSL_Installed_NotificationDone == 0
-                    MessageBox MB_OK "WSL2 is already installed on your system."
-                    StrCpy $WSL_Installed_NotificationDone 1
-                ${EndIf}
-            ${EndIf}
-        SectionEnd
     SectionGroupEnd
 
     SectionGroup "Speech to Text Container" SEC_GROUP_S2T
@@ -176,6 +177,16 @@
             StrCpy $Speech2Text_Installed 1
         SectionEnd
 
+        Section "WSL2 for Speech2Text" SEC_WSL_S2T
+            ${If} $WSL_Installed == 0
+                Call InstallWSL2
+            ${Else}
+                ${If} $WSL_Installed_NotificationDone == 0
+                    MessageBox MB_OK "WSL2 is already installed on your system."
+                ${EndIf}
+            ${EndIf}
+        SectionEnd
+
         Section "Docker for Speech2Text" SEC_DOCKER_S2T
             ${If} $Docker_Installed == 0
                 Call InstallDocker
@@ -186,15 +197,6 @@
             ${EndIf}
         SectionEnd
 
-        Section "WSL2 for Speech2Text" SEC_WSL_S2T
-            ${If} $WSL_Installed == 0
-                Call InstallWSL2
-            ${Else}
-                ${If} $WSL_Installed_NotificationDone == 0
-                    MessageBox MB_OK "WSL2 is already installed on your system."
-                ${EndIf}
-            ${EndIf}
-        SectionEnd
     SectionGroupEnd
 
     Section "Freescribe Client" SEC_FREESCRIBE
@@ -424,10 +426,6 @@ FunctionEnd
         ; Finally, remove the installation directory if empty
         RmDir "$INSTDIR"
 
-        ; Optionally delete the registry entry (if created)
-        ;!include "WinMessages.nsh"
-        ;RMDir /r "$APPDATA\FreeScribe"
-        ;RegDelete "HKCU\Software\ClinicianFOCUS\Toolbox"
     SectionEnd
 
 ;--------------------------------
