@@ -36,6 +36,7 @@
     Var Checkbox_AdvancedInstall
 
     Var Is_Basic_Install
+    Var Is_Adv_Install
 
 ;--------------------------------
 ;General
@@ -374,7 +375,9 @@ FunctionEnd
         SectionGetFlags ${SEC_LLM} $0
         IntOp $0 $0 & ${SF_SELECTED}
         ${If} $0 == ${SF_SELECTED}
-            Call ModelPageCreate
+            ${If} $Is_Adv_Install == ${BST_CHECKED}
+                Call ModelPageCreate
+            ${EndIf}
         ${EndIf}
     FunctionEnd
 
@@ -382,7 +385,9 @@ FunctionEnd
         SectionGetFlags ${SEC_S2T} $0
         IntOp $0 $0 & ${SF_SELECTED}
         ${If} $0 == ${SF_SELECTED}
-            Call WhisperSettingsPageCreate
+            ${If} $Is_Adv_Install == ${BST_CHECKED}
+                Call WhisperSettingsPageCreate
+            ${EndIf}
         ${EndIf}
     FunctionEnd
 ;--------------------------------
@@ -538,7 +543,8 @@ Function EnableAdvancedInstall
 FunctionEnd
 
 Function InstallModePageLeave
-    ; Check the state of Basic Install and Advanced Install checkboxes
+    ; store the state of the Basic Install checkbox
     ${NSD_GetState} $Checkbox_BasicInstall $Is_Basic_Install
+    ${NSD_GetState} $Checkbox_AdvancedInstall $Is_Adv_Install
 
 FunctionEnd
