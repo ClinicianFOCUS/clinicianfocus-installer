@@ -482,11 +482,11 @@ FunctionEnd
     FunctionEnd
 
     Function ModelSelectionChanged
-        Pop $0 ; Get dropdown handle
+        Pop $0 ; Remove callback handle from stack
         
-        ; Get selected item
-        ${NSD_GetText} $DropDown_Model $1
-        MessageBox
+        ; Get current selection after the change
+        System::Call "user32::SendMessage(p $DropDown_Model, i ${CB_GETCURSEL}, i 0, i 0) i .r0"
+        System::Call "user32::SendMessage(p $DropDown_Model, i ${CB_GETLBTEXT}, i r0, t .r1)"
         
         ${If} $1 == "Custom"
             ShowWindow $DropDown_Model ${SW_HIDE}
@@ -500,7 +500,7 @@ FunctionEnd
     Function ModelPageLeave
         ${NSD_GetText} $DropDown_Model $1  # $0 will hold the user input
         StrCmp $1 "Custom" 0 +2
-        MessageBox MB_OK "Please read the documentation for custom model use. This is for advanced users only."
+        ${NSD_GetText} $Input_CustomModel $1
         
         ; Get the Huggingface token
         ${NSD_GetText} $Input_HFToken $2
