@@ -572,7 +572,21 @@ Function InstallModePageCreate
     Pop $Checkbox_AdvancedInstall
     ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
 
+    ; Disable selection of both Basic and Advanced Install at the same time
+    ${NSD_OnClick} $Checkbox_BasicInstall EnableBasicInstall
+    ${NSD_OnClick} $Checkbox_AdvancedInstall EnableAdvancedInstall
+
     nsDialogs::Show
+FunctionEnd
+
+Function EnableBasicInstall
+    ${NSD_SetState} $Checkbox_BasicInstall ${BST_CHECKED}
+    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
+FunctionEnd
+
+Function EnableAdvancedInstall
+    ${NSD_SetState} $Checkbox_BasicInstall ${BST_UNCHECKED}
+    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_CHECKED}
 FunctionEnd
 
 
