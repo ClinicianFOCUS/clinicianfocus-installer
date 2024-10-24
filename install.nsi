@@ -318,10 +318,30 @@ Function WhisperSettingsPageCreate
         Abort
     ${EndIf}
 
+    ; Create a label for the API key input
+    ${NSD_CreateLabel} 0u 0u 100% 12u "Whisper Password (API Key):"
+    ${NSD_CreateText} 0u 14u 100% 12u ""
+    Pop $Input_WhisperAPIKey
+    
+    ; Create description label for API key
+    ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper service"
+    Pop $0
+    SetCtlColors $0 808080 transparent
+
     ; Create a label for the model selection
-    ${NSD_CreateLabel} 0u 30u 100% 12u "Select Whisper Model:"
-    ${NSD_CreateComboBox} 0u 44u 100% 12u ""
+    ${NSD_CreateLabel} 0u 44u 100% 12u "Select Whisper Model:"
+    ${NSD_CreateComboBox} 0u 58u 100% 12u ""
     Pop $DropDown_WhisperModel
+
+    ; Create description label for model selection
+    ${NSD_CreateLabel} 0u 72u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
+    Pop $0
+    SetCtlColors $0 808080 transparent
+
+    ; Add more detailed model descriptions
+    ${NSD_CreateLabel} 0u 86u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
+    Pop $0
+    SetCtlColors $0 808080 transparent
 
     ; Add the model options to the drop-down
     ${NSD_CB_AddString} $DropDown_WhisperModel "tiny"
@@ -332,11 +352,6 @@ Function WhisperSettingsPageCreate
 
     ; Set "medium" as the default and recommended selection
     ${NSD_CB_SelectString} $DropDown_WhisperModel "medium"
-
-    ; Create a label for the API key input
-    ${NSD_CreateLabel} 0u 0u 100% 12u "Whisper API Key:"
-    ${NSD_CreateText} 0u 14u 100% 12u ""
-    Pop $Input_WhisperAPIKey
 
     ; Display the dialog
     nsDialogs::Show
@@ -457,10 +472,21 @@ FunctionEnd
         ${NSD_CreateComboBox} 0u 14u 100% 12u ""
         Pop $DropDown_Model
         
+        ; Create description label for model selection
+        ${NSD_CreateLabel} 0u 28u 100% 12u "Select a pre-configured model or choose 'Custom' for your own model"
+        Pop $0
+        SetCtlColors $0 808080 transparent
+
         ; Create text input for custom model (initially hidden)
         ${NSD_CreateText} 0u 14u 100% 12u ""
         Pop $Input_CustomModel
         ShowWindow $Input_CustomModel ${SW_HIDE}
+        
+        ; Create description label for custom model (initially hidden)
+        ${NSD_CreateLabel} 0u 28u 100% 12u "Enter the full path or identifier of your custom model"
+        Pop $0
+        SetCtlColors $0 808080 transparent
+        ShowWindow $0 ${SW_HIDE}
 
         ; Add items to dropdown
         ${NSD_CB_AddString} $DropDown_Model "google/gemma-2-2b-it"
@@ -468,10 +494,15 @@ FunctionEnd
         ${NSD_CB_SelectString} $DropDown_Model "google/gemma-2-2b-it"
 
         ; Create input for Huggingface Token
-        ${NSD_CreateLabel} 0u 30u 100% 12u "Huggingface Token:"
+        ${NSD_CreateLabel} 0u 44u 100% 12u "Huggingface Token:"
         Pop $0
-        ${NSD_CreateText} 0u 44u 100% 12u ""
+        ${NSD_CreateText} 0u 58u 100% 12u ""
         Pop $Input_HFToken
+        
+        ; Create description label for Huggingface token
+        ${NSD_CreateLabel} 0u 72u 100% 12u "Enter your Huggingface API token if referencing a gated model on Huggingface"
+        Pop $0
+        SetCtlColors $0 808080 transparent
 
         ; Add event handler for dropdown changes
         ${NSD_OnChange} $DropDown_Model ModelSelectionChanged
