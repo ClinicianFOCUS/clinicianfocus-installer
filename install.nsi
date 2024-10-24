@@ -7,6 +7,8 @@
     !include WinVer.nsh
     !include LogicLib.nsh
     !include Sections.nsh
+    !define MARKER_REG_KEY "Software\ClinicianFOCUS-installer\InstallState"
+    
 
     ; Declare variables for checkboxes and installation status
     Var Checkbox_LLM
@@ -227,8 +229,16 @@
             StrCpy $Docker_Installed_NotificationDone 1
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
 
-            ; Add message box with instructions
-            MessageBox MB_OK "Docker Desktop has been launched. Please follow these steps:$\n$\n1. Accept the Docker license agreement$\n2. Log in to your Docker account (or create one if needed)$\n3. Complete the Docker survey (optional)$\n4. Wait for Docker to fully start before launching containers$\n$\nClick OK when you've completed these steps and Docker is running."
+            ; Add message box with instructions and restart option
+            MessageBox MB_YESNO "Docker Desktop has been installed. Please restart your computer then restart the clincian focus toolbox installer." IDYES RestartNow IDNO ContinueInstall
+
+            RestartNow:
+                ; Save any necessary installation state here if needed
+                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "BeforeRestart"
+                Reboot
+                
+            ContinueInstall:
+                MessageBox MB_OK "Click OK when you've completed these steps and Docker is running."
         ${Else}
             MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
             OpenDockerPage:
@@ -267,6 +277,26 @@
 ; On installer start
 ; Define actions to take when the installer starts
     Function .onInit
+
+        ; Read the state from the registry
+        ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+
+
+        StrCmp $0 "BeforeRestart" ResumeInstall 0
+        Goto Done
+
+        ResumeInstall:
+            ; Continue the installation process after restart
+            ; Perform tasks that should be resumed post-restart
+            Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
+            MessageBox MB_OK "Docker Desktop has been launched. Please follow these steps:$\n$\n1. Accept the Docker license agreement$\n2. Log in to your Docker account (or create one if needed)$\n3. Complete the Docker survey (optional)$\n4. Wait for Docker to fully start before launching containers$\n$\nClick OK when you've completed these steps and Docker is running."
+            ; Clear the registry marker to indicate completion
+            DeleteRegKey HKCU ${MARKER_REG_KEY}
+
+            ; Check if Docker is installed and running
+
+        Done:
+
         ${IfNot} ${AtLeastWin10}
             MessageBox MB_OK|MB_ICONSTOP "This installer requires Windows 10 or later.$\nPlease upgrade your operating system and try again."
             Quit
