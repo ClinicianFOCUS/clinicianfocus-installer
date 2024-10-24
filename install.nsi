@@ -32,6 +32,11 @@
     Var WhisperAPIKey
     Var WhisperModel
 
+    Var Checkbox_BasicInstall
+    Var Checkbox_AdvancedInstall
+
+    Var Is_Basic_Install
+
 ;--------------------------------
 ;General
 ; Set general installer properties
@@ -49,11 +54,11 @@
 ;Pages
 ; Define the installer pages
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
-    ; Page custom DependenciesPageCreate DependenciesPageLeave
+    Page custom InstallModePageCreate InstallModePageLeave
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
     Page custom ConditionalModelPageCreate ModelPageLeave
-    Page custom WhisperSettingsPageCreate WhisperSettingsPageLeave
+    Page custom ConditionalWhisperPageCreate WhisperSettingsPageLeave
     !insertmacro MUI_PAGE_INSTFILES
     Page custom FinishPageCreate FinishPageLeave
 
@@ -372,6 +377,14 @@ FunctionEnd
             Call ModelPageCreate
         ${EndIf}
     FunctionEnd
+
+    Function ConditionalWhisperPageCreate
+        SectionGetFlags ${SEC_S2T} $0
+        IntOp $0 $0 & ${SF_SELECTED}
+        ${If} $0 == ${SF_SELECTED}
+            Call WhisperSettingsPageCreate
+        ${EndIf}
+    FunctionEnd
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
 ; Define the model selection page
@@ -485,4 +498,47 @@ Function FinishPageLeave
     ${NSD_GetState} $Checkbox_FreeScribe $0
     StrCmp $0 ${BST_CHECKED} 0 +2
         Exec '"$APPDATA\freescribe\freescribe-client.exe"'
+FunctionEnd
+
+; Advanced and basic installation mode
+Function InstallModePageCreate
+    ; Set the title and description for this page
+    !insertmacro MUI_HEADER_TEXT "Installation Mode" "Select the installation mode: Basic or Advanced."
+
+    nsDialogs::Create 1018
+    Pop $0
+    ${If} $0 == error
+        Abort
+    ${EndIf}
+
+    ; Create checkboxes for Basic Install and Advanced Install
+    ${NSD_CreateCheckbox} 0u 0u 100% 12u "Basic Install (Recommended)"
+    Pop $Checkbox_BasicInstall
+    ${NSD_SetState} $Checkbox_BasicInstall ${BST_CHECKED}
+
+    ${NSD_CreateCheckbox} 0u 14u 100% 12u "Advanced Install"
+    Pop $Checkbox_AdvancedInstall
+    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
+
+    ; Disable selection of both Basic and Advanced Install at the same time
+    ${NSD_OnClick} $Checkbox_BasicInstall EnableBasicInstall
+    ${NSD_OnClick} $Checkbox_AdvancedInstall EnableAdvancedInstall
+
+    nsDialogs::Show
+FunctionEnd
+
+Function EnableBasicInstall
+    ${NSD_SetState} $Checkbox_BasicInstall ${BST_CHECKED}
+    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
+FunctionEnd
+
+Function EnableAdvancedInstall
+    ${NSD_SetState} $Checkbox_BasicInstall ${BST_UNCHECKED}
+    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_CHECKED}
+FunctionEnd
+
+Function InstallModePageLeave
+    ; Check the state of Basic Install and Advanced Install checkboxes
+    ${NSD_GetState} $Checkbox_BasicInstall $Is_Basic_Install
+
 FunctionEnd
