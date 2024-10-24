@@ -114,7 +114,7 @@
                 FileSeek $4 0 ; we want to start reading at the 1000th byte
                 FileRead $4 $1 ; we read until the end of line (including carriage return and new line) and save it to $1
                 FileRead $4 $2 ; read 10 characters from the next line
-                FileClose $4 ; and close the file\
+                FileClose $4 ; and close the file
             ${EndIf}
             
             ;; Copy in new files
@@ -130,15 +130,26 @@
             ${EndIf}
 
             ${If} $Is_Basic_Install == ${BST_CHECKED}
-                ; make a env with default values
+                ; Create the .env directories for the Speech2Text container
                 CreateDirectory "$INSTDIR\speech2text-container"
-                SetOutPath "$INSTDIR\speech2text-container"
-                FileOpen $4 "$INSTDIR\speech2text-container\.env" w
-                FileWrite $4 "SESSION_API_KEY=GENERATE$\r$\n"
-                FileWrite $4 "WHISPER_MODEL=medium$\r$\n"
-                FileClose $4
-            ${EndIf}
 
+                ; Define the file path for the .env settings
+                StrCpy $0 "$INSTDIR\speech2text-container\.env"
+
+                ; Open the .env file for writing
+                FileOpen $3 $0 w
+                ${If} $3 == ""
+                    MessageBox MB_OK "Error: Could not create .env file for Speech2Text settings."
+                    Abort
+                ${EndIf}
+
+                ; Write the API key and model selection to the .env file
+                FileWrite $3 "SESSION_API_KEY=GENERATE$\r$\n"
+                FileWrite $3 "WHISPER_MODEL=medium$\r$\n"
+
+                ; Close the file
+                FileClose $3
+            ${EndIf}
 
             StrCpy $Speech2Text_Installed 1
         SectionEnd
