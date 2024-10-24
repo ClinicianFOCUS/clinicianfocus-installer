@@ -440,6 +440,8 @@ FunctionEnd
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
 ; Define the model selection page
+
+    Var Input_CustomModel
     Function ModelPageCreate
         nsDialogs::Create 1018
         Pop $0
@@ -447,21 +449,52 @@ FunctionEnd
             Abort
         ${EndIf}
 
-        ; Create dropdown for Model selection
+        ; Create label for Model selection
         ${NSD_CreateLabel} 0u 0u 100% 12u "Model:"
+        Pop $0
+
+        ; Create dropdown for Model selection
         ${NSD_CreateComboBox} 0u 14u 100% 12u ""
         Pop $DropDown_Model
+        
+        ; Create text input for custom model (initially hidden)
+        ${NSD_CreateText} 0u 14u 100% 12u ""
+        Pop $Input_CustomModel
+        ShowWindow $Input_CustomModel ${SW_HIDE}
 
+        ; Add items to dropdown
         ${NSD_CB_AddString} $DropDown_Model "google/gemma-2-2b-it"
         ${NSD_CB_AddString} $DropDown_Model "Custom"
-        ${NSD_CB_SelectString} $DropDown_Model "google/gemma-2-2b-it" ; Default selection
+        ${NSD_CB_SelectString} $DropDown_Model "google/gemma-2-2b-it"
 
         ; Create input for Huggingface Token
         ${NSD_CreateLabel} 0u 30u 100% 12u "Huggingface Token:"
+        Pop $0
         ${NSD_CreateText} 0u 44u 100% 12u ""
         Pop $Input_HFToken
 
+        ; Add event handler for dropdown changes
+        ${NSD_OnChange} $DropDown_Model ModelSelectionChanged
+
+        Call ModelSelectionChanged
+
         nsDialogs::Show
+    FunctionEnd
+
+    Function ModelSelectionChanged
+        Pop $0 ; Get dropdown handle
+        
+        ; Get selected item
+        ${NSD_GetText} $DropDown_Model $1
+        MessageBox
+        
+        ${If} $1 == "Custom"
+            ShowWindow $DropDown_Model ${SW_HIDE}
+            ShowWindow $Input_CustomModel ${SW_SHOW}
+        ${Else}
+            ShowWindow $DropDown_Model ${SW_SHOW}
+            ShowWindow $Input_CustomModel ${SW_HIDE}
+        ${EndIf}
     FunctionEnd
 
     Function ModelPageLeave
