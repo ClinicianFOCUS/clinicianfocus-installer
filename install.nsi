@@ -79,6 +79,28 @@
             SetOutPath "$INSTDIR\local-llm-container"
             File ".\local-llm-container\*.*"
             StrCpy $LLM_Installed 1
+
+            ${If} $Is_Basic_Install == ${BST_CHECKED}
+
+                ; Create the .env directories for the Local LLM container
+                CreateDirectory "$INSTDIR\local-llm-container"
+
+                ; Define the file path for the .env settings
+                StrCpy $0 "$INSTDIR\local-llm-container\.env"
+
+                ; Open the .env file for writing
+                FileOpen $3 $0 w
+                ${If} $3 == ""
+                    MessageBox MB_OK "Error: Could not create .env file for Local LLM settings."
+                    Abort
+                ${EndIf}
+
+                ; Write the MODEL_NAME environment variable to the .env file
+                FileWrite $3 "MODEL_NAME=lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF$\r$\n"
+
+                ; Close the file
+                FileClose $3
+            ${EndIf}
         SectionEnd
 
         Section "Docker for LLM" SEC_DOCKER_LLM
