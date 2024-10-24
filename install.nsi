@@ -108,22 +108,36 @@
         Section "Speech2Text-Container Module" SEC_S2T
             CreateDirectory "$INSTDIR\speech2text-container"
             
-            ; Save new env stuff to memory
-            FileOpen $4 "$INSTDIR\speech2text-container\.env" r
-            FileSeek $4 0 ; we want to start reading at the 1000th byte
-            FileRead $4 $1 ; we read until the end of line (including carriage return and new line) and save it to $1
-            FileRead $4 $2 ; read 10 characters from the next line
-            FileClose $4 ; and close the file
+            ${If} $Is_Adv_Install == ${BST_CHECKED}
+                ; Save new env stuff to memory
+                FileOpen $4 "$INSTDIR\speech2text-container\.env" r
+                FileSeek $4 0 ; we want to start reading at the 1000th byte
+                FileRead $4 $1 ; we read until the end of line (including carriage return and new line) and save it to $1
+                FileRead $4 $2 ; read 10 characters from the next line
+                FileClose $4 ; and close the file\
+            ${EndIf}
             
             ;; Copy in new files
             SetOutPath "$INSTDIR\speech2text-container"
             File ".\speech2text-container\*.*"
 
-            ; Set the new env stuff into env file since it just got replaced
-            FileOpen $4 "$INSTDIR\speech2text-container\.env" w
-            FileWrite $4 $1
-            FileWrite $4 $2
-            FileClose $4
+            ${If} $Is_Adv_Install == ${BST_CHECKED}
+                ; Set the new env stuff into env file since it just got replaced
+                FileOpen $4 "$INSTDIR\speech2text-container\.env" w
+                FileWrite $4 $1
+                FileWrite $4 $2
+                FileClose $4
+            ${EndIf}
+
+            ${If} $Is_Basic_Install == ${BST_CHECKED}
+                ; make a env with default values
+                CreateDirectory "$INSTDIR\speech2text-container"
+                SetOutPath "$INSTDIR\speech2text-container"
+                FileOpen $4 "$INSTDIR\speech2text-container\.env" w
+                FileWrite $4 "SESSION_API_KEY=GENERATE$\r$\n"
+                FileWrite $4 "WHISPER_MODEL=medium$\r$\n"
+                FileClose $4
+            ${EndIf}
 
 
             StrCpy $Speech2Text_Installed 1
@@ -525,9 +539,6 @@ Function InstallModePageCreate
     Pop $Checkbox_AdvancedInstall
     ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
 
-    Call GenerateRandomString
-      MessageBox MB_OK "Random String: $R0"
-
     nsDialogs::Show
 FunctionEnd
 
@@ -537,52 +548,4 @@ Function InstallModePageLeave
     ${NSD_GetState} $Checkbox_BasicInstall $Is_Basic_Install
     ${NSD_GetState} $Checkbox_AdvancedInstall $Is_Adv_Install
 
-FunctionEnd
-
-Function GenerateRandomString
-  Push $0 ; String length
-  Push $1 ; Counter
-  Push $2 ; Output string
-  Push $3 ; Random number
-  Push $4 ; Temp char
-  
-  StrCpy $0 32 ; Set length to 32
-  StrCpy $1 0  ; Initialize counter
-  StrCpy $2 "" ; Initialize output string
-  
-  ${Do}
-    ; Generate random number between 0-35 (26 letters + 10 numbers)
-    System::Call 'kernel32::GetTickCount()i.r3'
-    IntOp $3 $3 % 36
-    
-    ; Convert to character
-    ${If} $3 < 26
-      ; Convert to letter (A-Z)
-      IntOp $3 $3 + 65 ; ASCII 'A' starts at 65
-      IntFmt $4 "%c" $3
-    ${Else}
-      ; Convert to number (0-9)
-      IntOp $3 $3 - 26
-      IntFmt $4 "%c" $3
-      IntOp $4 $4 + 48 ; ASCII '0' starts at 48
-    ${EndIf}
-    
-    ; Append character to output string
-    StrCpy $2 "$2$4"
-    
-    ; Increment counter
-    IntOp $1 $1 + 1
-    
-    ; Continue until we reach desired length
-    ${LoopUntil} $1 >= $0
-  
-  ; Return the generated string
-  Push $2
-  
-  ; Clean up the stack
-  Pop $4
-  Pop $3
-  Pop $2
-  Pop $1
-  Pop $0
 FunctionEnd
