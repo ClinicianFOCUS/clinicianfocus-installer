@@ -238,7 +238,8 @@
                 Reboot
                 
             ContinueInstall:
-                MessageBox MB_OK "Click OK when you've completed these steps and Docker is running."
+                MessageBox MB_OK "Please restart the installer once you have restarted your computer."
+                Quit
         ${Else}
             MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
             OpenDockerPage:
@@ -275,27 +276,37 @@
 
 ;--------------------------------
 ; On installer start
-; Define actions to take when the installer starts
     Function .onInit
-
         ; Read the state from the registry
         ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+        ReadRegStr $1 HKCU "${MARKER_REG_KEY}" "InstallPath"
 
-
-        StrCmp $0 "BeforeRestart" ResumeInstall 0
-        Goto Done
-
-        ResumeInstall:
-            ; Continue the installation process after restart
-            ; Perform tasks that should be resumed post-restart
+        ${If} $0 == "BeforeRestart"
+            ; Set the installation directory from registry
+            ${If} $1 != ""
+                StrCpy $INSTDIR $1
+            ${EndIf}
+            
+            ; Skip to the components page
+            SetAutoClose true
+            
+            ; Start Docker Desktop
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
-            MessageBox MB_OK "Docker Desktop has been launched. Please follow these steps:$\n$\n1. Accept the Docker license agreement$\n2. Log in to your Docker account (or create one if needed)$\n3. Complete the Docker survey (optional)$\n4. Wait for Docker to fully start before launching containers$\n$\nClick OK when you've completed these steps and Docker is running."
-            ; Clear the registry marker to indicate completion
-            DeleteRegKey HKCU ${MARKER_REG_KEY}
-
-            ; Check if Docker is installed and running
-
-        Done:
+            
+            ; Show Docker startup message
+            MessageBox MB_OK "Docker Desktop has been launched. Please follow these steps:$\n$\n1. Accept the Docker license agreement$\n2. Log in to your Docker account (or create one if needed)$\n3. Wait for Docker to fully start before continuing$\n$\nClick OK when Docker is running."
+            
+            ; Clear the registry markers
+            DeleteRegValue HKCU "${MARKER_REG_KEY}" "Step"
+            DeleteRegValue HKCU "${MARKER_REG_KEY}" "InstallPath"
+            DeleteRegKey /ifempty HKCU "${MARKER_REG_KEY}"
+            
+            ; Set Docker as installed
+            StrCpy $Docker_Installed 1
+            StrCpy $Docker_Installed_NotificationDone 1
+            
+            Goto skipChecks
+        ${EndIf}
 
         ${IfNot} ${AtLeastWin10}
             MessageBox MB_OK|MB_ICONSTOP "This installer requires Windows 10 or later.$\nPlease upgrade your operating system and try again."
@@ -329,6 +340,7 @@
             StrCpy $WSL_Installed 0
         ${EndIf}
 
+        skipChecks:
         ; Set up section dependencies
         SectionGetFlags ${SEC_LLM} $0
         IntOp $0 $0 | ${SF_EXPAND}
@@ -337,7 +349,7 @@
         SectionGetFlags ${SEC_S2T} $0
         IntOp $0 $0 | ${SF_EXPAND}
         SectionSetFlags ${SEC_S2T} $0
-    FunctionEnd
+FunctionEnd
 
 ;--------------------------------
 ; Whisper Settings Page Customization using nsDialogs
