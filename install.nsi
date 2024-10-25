@@ -106,7 +106,7 @@
                 ${EndIf}
 
                 ; Write the MODEL_NAME environment variable to the .env file
-                FileWrite $3 "MODEL_NAME=lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF$\r$\n"
+                FileWrite $3 "MODEL_NAME=google/gemma-2-2b-it$\r$\n"
 
                 ; Close the file
                 FileClose $3
@@ -237,17 +237,17 @@
             StrCpy $Docker_Installed_NotificationDone 1
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
 
-            WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
-
             ; Add message box with instructions and restart option
             MessageBox MB_YESNO "Docker Desktop has been installed. Please restart your computer then restart the clincian focus toolbox installer." IDYES RestartNow IDNO ContinueInstall
 
             RestartNow:
                 ; Save any necessary installation state here if needed
+                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
                 Reboot
                 
             ContinueInstall:
                 MessageBox MB_OK "Please restart the installer once you have restarted your computer."
+                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
                 Quit
         ${Else}
             MessageBox MB_YESNO "Docker download failed (Error: $R0). Would you like to download it manually?$\n$\nClick Yes to open the Docker download page in your browser.$\nClick No to skip Docker installation." IDYES OpenDockerPage IDNO SkipDockerInstall
