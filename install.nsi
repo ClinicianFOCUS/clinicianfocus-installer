@@ -40,6 +40,9 @@
     Var Is_Basic_Install
     Var Is_Adv_Install
 
+    Var ShowComponents
+    Var ShowDirectory
+
 ;--------------------------------
 ;General
 ; Set general installer properties
@@ -55,18 +58,23 @@
 
 ;--------------------------------
 ;Pages
-; Define the installer pages
+; define installer pages
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
     Page custom InstallModePageCreate InstallModePageLeave
-    !insertmacro MUI_PAGE_COMPONENTS
+
+    ; Components page with condition
+    !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowComponents
+    !insertmacro MUI_PAGE_COMPONENTS 
+
+    ; Directory page with condition
+    !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowDirectory
     !insertmacro MUI_PAGE_DIRECTORY
+
+    ; Custom pages
     Page custom ConditionalModelPageCreate ModelPageLeave
     Page custom ConditionalWhisperPageCreate WhisperSettingsPageLeave
     !insertmacro MUI_PAGE_INSTFILES
     Page custom FinishPageCreate FinishPageLeave
-
-    !insertmacro MUI_UNPAGE_CONFIRM
-    !insertmacro MUI_UNPAGE_INSTFILES
 
     !insertmacro MUI_LANGUAGE "English"
 
@@ -234,10 +242,11 @@
 
             RestartNow:
                 ; Save any necessary installation state here if needed
-                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "BeforeRestart"
+                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
                 Reboot
                 
             ContinueInstall:
+                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
                 MessageBox MB_OK "Please restart the installer once you have restarted your computer."
                 Quit
         ${Else}
@@ -281,14 +290,15 @@
         ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
         ReadRegStr $1 HKCU "${MARKER_REG_KEY}" "InstallPath"
 
-        ${If} $0 == "BeforeRestart"
+        StrCpy $ShowComponents 1 ; 1 = show, 0 = hide
+        StrCpy $ShowDirectory 1  ; 1 = show, 0 = hide
+
+        ${If} $0 == "AfterRestart"
             ; Set the installation directory from registry
             ${If} $1 != ""
                 StrCpy $INSTDIR $1
             ${EndIf}
             
-            ; Skip to the components page
-            SetAutoClose true
             
             ; Start Docker Desktop
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
@@ -296,14 +306,12 @@
             ; Show Docker startup message
             MessageBox MB_OK "Docker Desktop has been launched. Please follow these steps:$\n$\n1. Accept the Docker license agreement$\n2. Log in to your Docker account (or create one if needed)$\n3. Wait for Docker to fully start before continuing$\n$\nClick OK when Docker is running."
             
-            ; Clear the registry markers
-            DeleteRegValue HKCU "${MARKER_REG_KEY}" "Step"
-            DeleteRegValue HKCU "${MARKER_REG_KEY}" "InstallPath"
-            DeleteRegKey /ifempty HKCU "${MARKER_REG_KEY}"
-            
             ; Set Docker as installed
             StrCpy $Docker_Installed 1
             StrCpy $Docker_Installed_NotificationDone 1
+
+            StrCpy $ShowComponents 0
+            StrCpy $ShowDirectory 0
             
             Goto skipChecks
         ${EndIf}
@@ -492,7 +500,34 @@ FunctionEnd
             ${EndIf}
         ${EndIf}
     FunctionEnd
-;--------------------------------
+
+
+    Function ShouldShowComponents
+        ${If} $ShowComponents == 0
+            ; Set default selections
+            SectionGetFlags ${SEC_LLM} $0
+            IntOp $0 $0 | ${SF_SELECTED}
+            SectionSetFlags ${SEC_LLM} $0
+            
+            SectionGetFlags ${SEC_S2T} $0
+            IntOp $0 $0 | ${SF_SELECTED}
+            SectionSetFlags ${SEC_S2T} $0
+            
+            Abort ; Skip the page
+        ${EndIf}
+    FunctionEnd
+
+    Function ShouldShowDirectory
+        ${If} $ShowDirectory == 0
+            ; Set default directory
+            ${If} $1 != ""
+                StrCpy $INSTDIR $1
+            ${EndIf}
+            Abort ; Skip the page
+        ${EndIf}
+    FunctionEnd
+
+    ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
 ; Define the model selection page
 
@@ -654,12 +689,27 @@ Function FinishPageLeave
     ${NSD_GetState} $Checkbox_FreeScribe $0
     StrCmp $0 ${BST_CHECKED} 0 +2
         Exec '"$APPDATA\freescribe\freescribe-client.exe"'
+
+    ; Clear the registry markers
+    DeleteRegValue HKCU "${MARKER_REG_KEY}" "Step"
+    DeleteRegValue HKCU "${MARKER_REG_KEY}" "InstallPath"
+    DeleteRegKey /ifempty HKCU "${MARKER_REG_KEY}"
+
 FunctionEnd
 
 ; Advanced and basic installation mode
 Function InstallModePageCreate
     ; Set the title and description for this page
     !insertmacro MUI_HEADER_TEXT "Installation Mode" "Select the installation mode: Basic or Advanced."
+
+    ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+
+    ${If} $0 == "AfterRestart"
+        ; Set basic install mode and skip the page
+        StrCpy $Is_Basic_Install ${BST_UNCHECKED}
+        StrCpy $Is_Adv_Install ${BST_UNCHECKED}
+        Abort ; Skip this page
+    ${EndIf}
 
     nsDialogs::Create 1018
     Pop $0
