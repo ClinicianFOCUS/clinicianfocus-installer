@@ -714,7 +714,7 @@
         ${If} $0 == "AfterRestart"
             ; Skip this page if we're returning from a restart
             StrCpy $Is_Basic_Install ${BST_UNCHECKED}
-            StrCpy $Is_Adv_Install ${BST_UNCHECKED}
+            StrCpy $Is_Adv_Install ${BST_CHECKED}
             Abort ; Skip this page
         ${EndIf}
 
