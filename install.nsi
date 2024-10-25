@@ -237,10 +237,10 @@
             StrCpy $Docker_Installed_NotificationDone 1
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
 
+            WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
+
             ; Add message box with instructions and restart option
             MessageBox MB_YESNO "Docker Desktop has been installed. Please restart your computer then restart the clincian focus toolbox installer." IDYES RestartNow IDNO ContinueInstall
-
-            WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
 
             RestartNow:
                 ; Save any necessary installation state here if needed
