@@ -89,28 +89,6 @@
             SetOutPath "$INSTDIR\local-llm-container"
             File ".\local-llm-container\*.*"
             StrCpy $LLM_Installed 1
-
-            ${If} $Is_Basic_Install == ${BST_CHECKED}
-
-                ; Create the .env directories for the Local LLM container
-                CreateDirectory "$INSTDIR\local-llm-container"
-
-                ; Define the file path for the .env settings
-                StrCpy $0 "$INSTDIR\local-llm-container\.env"
-
-                ; Open the .env file for writing
-                FileOpen $3 $0 w
-                ${If} $3 == ""
-                    MessageBox MB_OK "Error: Could not create .env file for Local LLM settings."
-                    Abort
-                ${EndIf}
-
-                ; Write the MODEL_NAME environment variable to the .env file
-                FileWrite $3 "MODEL_NAME=google/gemma-2-2b-it$\r$\n"
-
-                ; Close the file
-                FileClose $3
-            ${EndIf}
         SectionEnd
 
         Section "WSL2 for LLM" SEC_WSL_LLM
@@ -160,28 +138,6 @@
                 FileWrite $4 $1
                 FileWrite $4 $2
                 FileClose $4
-            ${EndIf}
-
-            ${If} $Is_Basic_Install == ${BST_CHECKED}
-                ; Create the .env directories for the Speech2Text container
-                CreateDirectory "$INSTDIR\speech2text-container"
-
-                ; Define the file path for the .env settings
-                StrCpy $0 "$INSTDIR\speech2text-container\.env"
-
-                ; Open the .env file for writing
-                FileOpen $3 $0 w
-                ${If} $3 == ""
-                    MessageBox MB_OK "Error: Could not create .env file for Speech2Text settings."
-                    Abort
-                ${EndIf}
-
-                ; Write the API key and model selection to the .env file
-                FileWrite $3 "SESSION_API_KEY=GENERATE$\r$\n"
-                FileWrite $3 "WHISPER_MODEL=medium$\r$\n"
-
-                ; Close the file
-                FileClose $3
             ${EndIf}
 
             StrCpy $Speech2Text_Installed 1
@@ -482,6 +438,12 @@
 ;Conditional Model Selection Page Display
 ; Define the conditional model selection page
     Function ConditionalModelPageCreate
+        ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+
+        ${If} $0 == "AfterRestart"
+            Abort ; Skip this page
+        ${EndIf}
+
         SectionGetFlags ${SEC_LLM} $0
         IntOp $0 $0 & ${SF_SELECTED}
         ${If} $0 == ${SF_SELECTED}
@@ -492,6 +454,12 @@
     FunctionEnd
 
     Function ConditionalWhisperPageCreate
+        ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+
+        ${If} $0 == "AfterRestart"
+            Abort ; Skip this page
+        ${EndIf}
+
         SectionGetFlags ${SEC_S2T} $0
         IntOp $0 $0 & ${SF_SELECTED}
         ${If} $0 == ${SF_SELECTED}
@@ -532,7 +500,7 @@
 ; Define the model selection page
 
     Var Input_CustomModel
-    Function ModelPageCreate
+    Function ModelPageCreate        
         nsDialogs::Create 1018
         Pop $0
         ${If} $0 == error
@@ -761,4 +729,46 @@
         ; Store the selected installation mode for later use
         ${NSD_GetState} $Checkbox_BasicInstall $Is_Basic_Install
         ${NSD_GetState} $Checkbox_AdvancedInstall $Is_Adv_Install
+
+        ; Setuo the defaults for s2t container
+        ${If} $Is_Basic_Install == ${BST_CHECKED}
+            ; Create the .env directories for the Speech2Text container
+            CreateDirectory "$INSTDIR\speech2text-container"
+
+            ; Define the file path for the .env settings
+            StrCpy $0 "$INSTDIR\speech2text-container\.env"
+
+            ; Open the .env file for writing
+            FileOpen $3 $0 w
+            ${If} $3 == ""
+                MessageBox MB_OK "Error: Could not create .env file for Speech2Text settings."
+                Abort
+            ${EndIf}
+
+            ; Write the API key and model selection to the .env file
+            FileWrite $3 "SESSION_API_KEY=GENERATE$\r$\n"
+            FileWrite $3 "WHISPER_MODEL=medium$\r$\n"
+
+            ; Close the file
+            FileClose $3
+
+            ; Create the .env directories for the Local LLM container
+            CreateDirectory "$INSTDIR\local-llm-container"
+
+            ; Define the file path for the .env settings
+            StrCpy $0 "$INSTDIR\local-llm-container\.env"
+
+            ; Open the .env file for writing
+            FileOpen $3 $0 w
+            ${If} $3 == ""
+                MessageBox MB_OK "Error: Could not create .env file for Local LLM settings."
+                Abort
+            ${EndIf}
+
+            ; Write the MODEL_NAME environment variable to the .env file
+            FileWrite $3 "MODEL_NAME=google/gemma-2-2b-it$\r$\n"
+
+            ; Close the file
+            FileClose $3
+        ${EndIf}
     FunctionEnd
