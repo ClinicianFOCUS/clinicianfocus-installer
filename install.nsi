@@ -357,85 +357,85 @@
         SectionGetFlags ${SEC_S2T} $0
         IntOp $0 $0 | ${SF_EXPAND}
         SectionSetFlags ${SEC_S2T} $0
-FunctionEnd
+    FunctionEnd
 
 ;--------------------------------
 ; Whisper Settings Page Customization using nsDialogs
 ; Define the Whisper settings page
-Function WhisperSettingsPageCreate
-    nsDialogs::Create 1018
+    Function WhisperSettingsPageCreate
+        nsDialogs::Create 1018
 
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
+        Pop $0
+        ${If} $0 == error
+            Abort
+        ${EndIf}
 
-    ; Create a label for the API key input
-    ${NSD_CreateLabel} 0u 0u 100% 12u "Whisper Password (API Key):"
-    ${NSD_CreateText} 0u 14u 100% 12u ""
-    Pop $Input_WhisperAPIKey
-    
-    ; Create description label for API key
-    ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper service"
-    Pop $0
-    SetCtlColors $0 808080 transparent
+        ; Create a label for the API key input
+        ${NSD_CreateLabel} 0u 0u 100% 12u "Whisper Password (API Key):"
+        ${NSD_CreateText} 0u 14u 100% 12u ""
+        Pop $Input_WhisperAPIKey
+        
+        ; Create description label for API key
+        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper service"
+        Pop $0
+        SetCtlColors $0 808080 transparent
 
-    ; Create a label for the model selection
-    ${NSD_CreateLabel} 0u 44u 100% 12u "Select Whisper Model:"
-    ${NSD_CreateComboBox} 0u 58u 100% 12u ""
-    Pop $DropDown_WhisperModel
+        ; Create a label for the model selection
+        ${NSD_CreateLabel} 0u 44u 100% 12u "Select Whisper Model:"
+        ${NSD_CreateComboBox} 0u 58u 100% 12u ""
+        Pop $DropDown_WhisperModel
 
-    ; Create description label for model selection
-    ${NSD_CreateLabel} 0u 72u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
-    Pop $0
-    SetCtlColors $0 808080 transparent
+        ; Create description label for model selection
+        ${NSD_CreateLabel} 0u 72u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
+        Pop $0
+        SetCtlColors $0 808080 transparent
 
-    ; Add more detailed model descriptions
-    ${NSD_CreateLabel} 0u 86u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
-    Pop $0
-    SetCtlColors $0 808080 transparent
+        ; Add more detailed model descriptions
+        ${NSD_CreateLabel} 0u 86u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
+        Pop $0
+        SetCtlColors $0 808080 transparent
 
-    ; Add the model options to the drop-down
-    ${NSD_CB_AddString} $DropDown_WhisperModel "tiny"
-    ${NSD_CB_AddString} $DropDown_WhisperModel "base"
-    ${NSD_CB_AddString} $DropDown_WhisperModel "small"
-    ${NSD_CB_AddString} $DropDown_WhisperModel "medium"
-    ${NSD_CB_AddString} $DropDown_WhisperModel "large"
+        ; Add the model options to the drop-down
+        ${NSD_CB_AddString} $DropDown_WhisperModel "tiny"
+        ${NSD_CB_AddString} $DropDown_WhisperModel "base"
+        ${NSD_CB_AddString} $DropDown_WhisperModel "small"
+        ${NSD_CB_AddString} $DropDown_WhisperModel "medium"
+        ${NSD_CB_AddString} $DropDown_WhisperModel "large"
 
-    ; Set "medium" as the default and recommended selection
-    ${NSD_CB_SelectString} $DropDown_WhisperModel "medium"
+        ; Set "medium" as the default and recommended selection
+        ${NSD_CB_SelectString} $DropDown_WhisperModel "medium"
 
-    ; Display the dialog
-    nsDialogs::Show
-FunctionEnd
+        ; Display the dialog
+        nsDialogs::Show
+    FunctionEnd
 
-Function WhisperSettingsPageLeave
-    ; Get the API key entered by the user
-    ${NSD_GetText} $Input_WhisperAPIKey $WhisperAPIKey
+    Function WhisperSettingsPageLeave
+        ; Get the API key entered by the user
+        ${NSD_GetText} $Input_WhisperAPIKey $WhisperAPIKey
 
-    ; Get the selected Whisper model
-    ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  # $1 will hold the user input
+        ; Get the selected Whisper model
+        ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  # $1 will hold the user input
 
-    ; Create the .env directories for the Whisper settings
-    CreateDirectory "$INSTDIR\speech2text-container"
+        ; Create the .env directories for the Whisper settings
+        CreateDirectory "$INSTDIR\speech2text-container"
 
-    ; Define the file path for the Whisper .env settings
-    StrCpy $0 "$INSTDIR\speech2text-container\.env"
+        ; Define the file path for the Whisper .env settings
+        StrCpy $0 "$INSTDIR\speech2text-container\.env"
 
-    ; Open the .env file for writing
-    FileOpen $3 $0 w
-    ${If} $3 == ""
-        MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
-        Abort
-    ${EndIf}
+        ; Open the .env file for writing
+        FileOpen $3 $0 w
+        ${If} $3 == ""
+            MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
+            Abort
+        ${EndIf}
 
-    ; Write the API key and model selection to the .env file
-    FileWrite $3 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
-    FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
+        ; Write the API key and model selection to the .env file
+        FileWrite $3 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
+        FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
 
-    ; Close the file
-    FileClose $3
-FunctionEnd
+        ; Close the file
+        FileClose $3
+    FunctionEnd
 
 ;--------------------------------
 ;Descriptions
@@ -527,7 +527,7 @@ FunctionEnd
         ${EndIf}
     FunctionEnd
 
-    ;--------------------------------
+;--------------------------------
 ;Model Selection Page Customization using nsDialogs
 ; Define the model selection page
 
@@ -643,110 +643,122 @@ FunctionEnd
 
 ;--------------------------------
 ;Finish Page Customization using nsDialogs
-; Define the finish page
-Function FinishPageCreate
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
 
-    ; Conditionally create the checkboxes only if the respective sections were installed
+; Function to create the finish page with launch options
+    Function FinishPageCreate
+        ; Create a new dialog
+        nsDialogs::Create 1018
+        Pop $0
+        ${If} $0 == error
+            Abort
+        ${EndIf}
 
-    ${If} $LLM_Installed == 1
-        ${NSD_CreateCheckbox} 0u 0u 100% 12u "Launch Local LLM"
-        Pop $Checkbox_LLM
-        ${NSD_SetState} $Checkbox_LLM ${BST_UNCHECKED}
-    ${EndIf}
+        ; Create checkboxes for each installed component
+        ; Only show checkboxes for components that were actually installed
+        
+        ; Check if LLM was installed and create its checkbox if true
+        ${If} $LLM_Installed == 1
+            ${NSD_CreateCheckbox} 0u 0u 100% 12u "Launch Local LLM"
+            Pop $Checkbox_LLM
+            ${NSD_SetState} $Checkbox_LLM ${BST_UNCHECKED}
+        ${EndIf}
 
-    ${If} $Speech2Text_Installed == 1
-        ${NSD_CreateCheckbox} 0u 14u 100% 12u "Launch Speech2Text"
-        Pop $Checkbox_Speech2Text
-        ${NSD_SetState} $Checkbox_Speech2Text ${BST_UNCHECKED}
-    ${EndIf}
+        ; Check if Speech2Text was installed and create its checkbox if true
+        ${If} $Speech2Text_Installed == 1
+            ${NSD_CreateCheckbox} 0u 14u 100% 12u "Launch Speech2Text"
+            Pop $Checkbox_Speech2Text
+            ${NSD_SetState} $Checkbox_Speech2Text ${BST_UNCHECKED}
+        ${EndIf}
 
-    ${If} $FreeScribe_Installed == 1
-        ${NSD_CreateCheckbox} 0u 28u 100% 12u "Launch FreeScribe"
-        Pop $Checkbox_FreeScribe
-        ${NSD_SetState} $Checkbox_FreeScribe ${BST_UNCHECKED}
-    ${EndIf}
+        ; Check if FreeScribe was installed and create its checkbox if true
+        ${If} $FreeScribe_Installed == 1
+            ${NSD_CreateCheckbox} 0u 28u 100% 12u "Launch FreeScribe"
+            Pop $Checkbox_FreeScribe
+            ${NSD_SetState} $Checkbox_FreeScribe ${BST_UNCHECKED}
+        ${EndIf}
 
-    nsDialogs::Show
-FunctionEnd
+        ; Display the dialog
+        nsDialogs::Show
+    FunctionEnd
 
-Function FinishPageLeave
-    ; Check if Local LLM was selected
-    ${NSD_GetState} $Checkbox_LLM $0
-    StrCmp $0 ${BST_CHECKED} 0 +2
-        ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
+    ; Function that executes when leaving the finish page
+    Function FinishPageLeave
+        ; Check LLM checkbox state and launch if checked
+        ${NSD_GetState} $Checkbox_LLM $0
+        StrCmp $0 ${BST_CHECKED} 0 +2
+            ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
 
-    ; Check if Speech2Text was selected
-    ${NSD_GetState} $Checkbox_Speech2Text $0
-    StrCmp $0 ${BST_CHECKED} 0 +2
-        ExecWait 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
+        ; Check Speech2Text checkbox state and launch if checked
+        ${NSD_GetState} $Checkbox_Speech2Text $0
+        StrCmp $0 ${BST_CHECKED} 0 +2
+            ExecWait 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
 
-    ; Check if FreeScribe was selected
-    ${NSD_GetState} $Checkbox_FreeScribe $0
-    StrCmp $0 ${BST_CHECKED} 0 +2
-        Exec '"$APPDATA\freescribe\freescribe-client.exe"'
+        ; Check FreeScribe checkbox state and launch if checked
+        ${NSD_GetState} $Checkbox_FreeScribe $0
+        StrCmp $0 ${BST_CHECKED} 0 +2
+            Exec '"$APPDATA\freescribe\freescribe-client.exe"'
 
-    ; Clear the registry markers
-    DeleteRegValue HKCU "${MARKER_REG_KEY}" "Step"
-    DeleteRegValue HKCU "${MARKER_REG_KEY}" "InstallPath"
-    DeleteRegKey /ifempty HKCU "${MARKER_REG_KEY}"
+        ; Cleanup: Remove registry entries used during installation
+        DeleteRegValue HKCU "${MARKER_REG_KEY}" "Step"
+        DeleteRegValue HKCU "${MARKER_REG_KEY}" "InstallPath"
+        DeleteRegKey /ifempty HKCU "${MARKER_REG_KEY}"
+    FunctionEnd
 
-FunctionEnd
+    ; Function to create the installation mode selection page
+    Function InstallModePageCreate
+        ; Set page title and description
+        !insertmacro MUI_HEADER_TEXT "Installation Mode" "Select the installation mode: Basic or Advanced."
 
-; Advanced and basic installation mode
-Function InstallModePageCreate
-    ; Set the title and description for this page
-    !insertmacro MUI_HEADER_TEXT "Installation Mode" "Select the installation mode: Basic or Advanced."
+        ; Check if we're returning after a restart
+        ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+        ${If} $0 == "AfterRestart"
+            ; Skip this page if we're returning from a restart
+            StrCpy $Is_Basic_Install ${BST_UNCHECKED}
+            StrCpy $Is_Adv_Install ${BST_UNCHECKED}
+            Abort ; Skip this page
+        ${EndIf}
 
-    ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+        ; Create the dialog
+        nsDialogs::Create 1018
+        Pop $0
+        ${If} $0 == error
+            Abort
+        ${EndIf}
 
-    ${If} $0 == "AfterRestart"
-        ; Set basic install mode and skip the page
-        StrCpy $Is_Basic_Install ${BST_UNCHECKED}
-        StrCpy $Is_Adv_Install ${BST_UNCHECKED}
-        Abort ; Skip this page
-    ${EndIf}
+        ; Create radio-like checkboxes for installation mode selection
+        ${NSD_CreateCheckbox} 0u 0u 100% 12u "Basic Install (Recommended)"
+        Pop $Checkbox_BasicInstall
+        ${NSD_SetState} $Checkbox_BasicInstall ${BST_CHECKED}
 
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-        Abort
-    ${EndIf}
+        ${NSD_CreateCheckbox} 0u 14u 100% 12u "Advanced Install"
+        Pop $Checkbox_AdvancedInstall
+        ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
 
-    ; Create checkboxes for Basic Install and Advanced Install
-    ${NSD_CreateCheckbox} 0u 0u 100% 12u "Basic Install (Recommended)"
-    Pop $Checkbox_BasicInstall
-    ${NSD_SetState} $Checkbox_BasicInstall ${BST_CHECKED}
+        ; Add click handlers to implement radio-button behavior
+        ${NSD_OnClick} $Checkbox_BasicInstall EnableBasicInstall
+        ${NSD_OnClick} $Checkbox_AdvancedInstall EnableAdvancedInstall
 
-    ${NSD_CreateCheckbox} 0u 14u 100% 12u "Advanced Install"
-    Pop $Checkbox_AdvancedInstall
-    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
+        ; Display the dialog
+        nsDialogs::Show
+    FunctionEnd
 
-    ; Disable selection of both Basic and Advanced Install at the same time
-    ${NSD_OnClick} $Checkbox_BasicInstall EnableBasicInstall
-    ${NSD_OnClick} $Checkbox_AdvancedInstall EnableAdvancedInstall
+    ; Function to handle Basic Install checkbox click
+    Function EnableBasicInstall
+        ; Implement radio-button behavior: check Basic, uncheck Advanced
+        ${NSD_SetState} $Checkbox_BasicInstall ${BST_CHECKED}
+        ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
+    FunctionEnd
 
-    nsDialogs::Show
-FunctionEnd
+    ; Function to handle Advanced Install checkbox click
+    Function EnableAdvancedInstall
+        ; Implement radio-button behavior: check Advanced, uncheck Basic
+        ${NSD_SetState} $Checkbox_BasicInstall ${BST_UNCHECKED}
+        ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_CHECKED}
+    FunctionEnd
 
-Function EnableBasicInstall
-    ${NSD_SetState} $Checkbox_BasicInstall ${BST_CHECKED}
-    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_UNCHECKED}
-FunctionEnd
-
-Function EnableAdvancedInstall
-    ${NSD_SetState} $Checkbox_BasicInstall ${BST_UNCHECKED}
-    ${NSD_SetState} $Checkbox_AdvancedInstall ${BST_CHECKED}
-FunctionEnd
-
-
-Function InstallModePageLeave
-    ; store the state of the Basic Install checkbox
-    ${NSD_GetState} $Checkbox_BasicInstall $Is_Basic_Install
-    ${NSD_GetState} $Checkbox_AdvancedInstall $Is_Adv_Install
-
-FunctionEnd
+    ; Function that executes when leaving the installation mode page
+    Function InstallModePageLeave
+        ; Store the selected installation mode for later use
+        ${NSD_GetState} $Checkbox_BasicInstall $Is_Basic_Install
+        ${NSD_GetState} $Checkbox_AdvancedInstall $Is_Adv_Install
+    FunctionEnd
