@@ -240,13 +240,13 @@
             ; Add message box with instructions and restart option
             MessageBox MB_YESNO "Docker Desktop has been installed. Please restart your computer then restart the clincian focus toolbox installer." IDYES RestartNow IDNO ContinueInstall
 
+            WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
+
             RestartNow:
                 ; Save any necessary installation state here if needed
-                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
                 Reboot
                 
             ContinueInstall:
-                WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
                 MessageBox MB_OK "Please restart the installer once you have restarted your computer."
                 Quit
         ${Else}
