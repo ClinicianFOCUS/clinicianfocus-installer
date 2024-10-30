@@ -96,7 +96,7 @@
                 Call InstallWSL2
             ${Else}
                 ${If} $WSL_Installed_NotificationDone == 0
-                    MessageBox MB_OK "WSL2 is already installed on your system."
+                    DetailPrint "WSL2 is already installed on your system."
                     StrCpy $WSL_Installed_NotificationDone 1
                 ${EndIf}
             ${EndIf}
@@ -107,7 +107,7 @@
                 Call InstallDocker
             ${Else}
                 ${If} $Docker_Installed_NotificationDone == 0
-                    MessageBox MB_OK "Docker is already installed on your system."
+                    DetailPrint "Docker is already installed on your system."
                     StrCpy $Docker_Installed_NotificationDone 1
                 ${EndIf}
             ${EndIf}
@@ -148,7 +148,7 @@
                 Call InstallWSL2
             ${Else}
                 ${If} $WSL_Installed_NotificationDone == 0
-                    MessageBox MB_OK "WSL2 is already installed on your system."
+                    DetailPrint "WSL2 is already installed on your system."
                 ${EndIf}
             ${EndIf}
         SectionEnd
@@ -158,7 +158,7 @@
                 Call InstallDocker
             ${Else}
                 ${If} $Docker_Installed_NotificationDone == 0
-                    MessageBox MB_OK "Docker is already installed on your system."
+                    DetailPrint "Docker is already installed on your system."
                 ${EndIf}
             ${EndIf}
         SectionEnd
