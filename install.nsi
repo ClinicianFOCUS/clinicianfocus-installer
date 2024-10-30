@@ -76,6 +76,10 @@
     !insertmacro MUI_PAGE_INSTFILES
     Page custom FinishPageCreate FinishPageLeave
 
+    !insertmacro MUI_UNPAGE_CONFIRM
+    !insertmacro MUI_UNPAGE_INSTFILES
+    !insertmacro MUI_UNPAGE_FINISH
+
     !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
