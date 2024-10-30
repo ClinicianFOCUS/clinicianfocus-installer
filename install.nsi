@@ -76,10 +76,12 @@
     !insertmacro MUI_PAGE_INSTFILES
     Page custom FinishPageCreate FinishPageLeave
 
+; define uninstaller pages
     !insertmacro MUI_UNPAGE_CONFIRM
     !insertmacro MUI_UNPAGE_INSTFILES
     !insertmacro MUI_UNPAGE_FINISH
 
+; define language
     !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
