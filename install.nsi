@@ -627,47 +627,55 @@
             Abort
         ${EndIf}
 
+        ; Initialize the vertical position for the first checkbox
+        StrCpy $1 0
+
         ; Create checkboxes for each installed component
         ; Only show checkboxes for components that were actually installed
         
         ; Check if LLM was installed and create its checkbox if true
         ${If} $LLM_Installed == 1
-            ${NSD_CreateCheckbox} 0u 0u 100% 12u "Launch Local LLM"
+            ${NSD_CreateCheckbox} 0u $1 100% 12u "Launch Local LLM"
             Pop $Checkbox_LLM
             ${NSD_SetState} $Checkbox_LLM ${BST_UNCHECKED}
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
         ${EndIf}
 
         ; Check if Speech2Text was installed and create its checkbox if true
         ${If} $Speech2Text_Installed == 1
-            ${NSD_CreateCheckbox} 0u 14u 100% 12u "Launch Speech2Text"
+            ${NSD_CreateCheckbox} 0u $1 100% 12u "Launch Speech2Text"
             Pop $Checkbox_Speech2Text
             ${NSD_SetState} $Checkbox_Speech2Text ${BST_UNCHECKED}
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
         ${EndIf}
 
         ; Check if FreeScribe was installed and create its checkbox if true
         ${If} $FreeScribe_Installed == 1
-            ${NSD_CreateCheckbox} 0u 28u 100% 12u "Launch FreeScribe"
+            ${NSD_CreateCheckbox} 0u $1 100% 12u "Launch FreeScribe"
             Pop $Checkbox_FreeScribe
             ${NSD_SetState} $Checkbox_FreeScribe ${BST_UNCHECKED}
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
         ${EndIf}
 
         
         ; Display a recommendation message if LLM or Speech2Text is installed
-    ${If} $LLM_Installed == 1
-    ${OrIf} $Speech2Text_Installed == 1
-        ; Create a bold label for the recommendation title
-        ${NSD_CreateLabel} 0u 42u 100% 12u "Recommended Actions:"
-        Pop $0
+        ${If} $LLM_Installed == 1
+        ${OrIf} $Speech2Text_Installed == 1
+            ; Create a bold label for the recommendation title
+            IntOp $1 $1 + 5u ; Increment the vertical position for the next checkbox
+            ${NSD_CreateLabel} 0u $1 100% 12u "Recommended Actions:"
+            Pop $0
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
 
-        ; Create a label for the first recommendation
-        ${NSD_CreateLabel} 0u 56u 100% 12u "1. Start Docker Desktop before launching Local LLM and Speech2Text."
-        Pop $0
+            ; Create a label for the first recommendation
+            ${NSD_CreateLabel} 0u $1 100% 12u "1. Start Docker Desktop before launching Local LLM and Speech2Text."
+            Pop $0
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
 
-        ; Create a label for the second recommendation
-        ${NSD_CreateLabel} 0u 70u 100% 12u "2. Launch Local LLM and Speech2Text to build the container image."
-        Pop $0
-
-    ${EndIf}
+            ; Create a label for the second recommendation
+            ${NSD_CreateLabel} 0u $1 100% 12u "2. Launch Local LLM and Speech2Text to build the container image."
+            Pop $0
+        ${EndIf}
 
         ; Display the dialog
         nsDialogs::Show
