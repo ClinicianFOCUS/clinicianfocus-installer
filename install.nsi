@@ -64,6 +64,7 @@
 
     ; Components page with condition
     !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowComponents
+    ; Custom function to check if at least one component is selected
     !define MUI_PAGE_CUSTOMFUNCTION_LEAVE ComponentsPageLeave
     !insertmacro MUI_PAGE_COMPONENTS
 
