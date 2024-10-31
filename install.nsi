@@ -749,8 +749,9 @@
 
         ; Setuo the defaults for s2t container
         ${If} $Is_Basic_Install == ${BST_CHECKED}
+            MessageBox MB_OK "Basic Install selected. Please note, the basic install will download the 8gb Mistral 7b AI Model. This may take a while, feel free to grab a coffee!"
 
-            # Add the required amount for mistral model
+            ; Add the required amount for mistral model
             SectionSetSize ${SEC_LLM} 8000000
             ; Create the .env directories for the Speech2Text container
             CreateDirectory "$INSTDIR\speech2text-container"
