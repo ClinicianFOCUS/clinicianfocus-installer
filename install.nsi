@@ -719,6 +719,10 @@
             Pop $0
         ${EndIf}
 
+        ; Get the handle of the "Close" button and change its text to "Finish"
+        GetDlgItem $0 $HWNDPARENT 1
+        SendMessage $0 ${WM_SETTEXT} 0 "STR:Finish"
+
         ; Display the dialog
         nsDialogs::Show
     FunctionEnd
