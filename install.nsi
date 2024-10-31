@@ -64,7 +64,8 @@
 
     ; Components page with condition
     !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowComponents
-    !insertmacro MUI_PAGE_COMPONENTS 
+    !define MUI_PAGE_CUSTOMFUNCTION_LEAVE ComponentsPageLeave
+    !insertmacro MUI_PAGE_COMPONENTS
 
     ; Directory page with condition
     !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowDirectory
@@ -243,6 +244,35 @@
         ${Else}
             MessageBox MB_OK "WSL2 download failed (Error: $R0). Please install WSL2 manually after the installation."
         ${EndIf}
+    FunctionEnd
+
+    Function ComponentsPageLeave
+        ; Initialize the count of selected components
+        StrCpy $0 0
+
+        ; Check if Local LLM is selected
+        SectionGetFlags ${SEC_LLM} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+        StrCmp $1 ${SF_SELECTED} 0 +2
+            IntOp $0 $0 + 1
+
+        ; Check if Speech2Text is selected
+        SectionGetFlags ${SEC_S2T} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+        StrCmp $1 ${SF_SELECTED} 0 +2
+            IntOp $0 $0 + 1
+
+        ; Check if FreeScribe is selected
+        SectionGetFlags ${SEC_FREESCRIBE} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+        StrCmp $1 ${SF_SELECTED} 0 +2
+            IntOp $0 $0 + 1
+
+        ; If fewer than two components are selected, show a message and abort
+        IntCmp $0 1 +3 0 +3
+        MessageBox MB_OK "You must select at least one components to proceed."
+        Abort
+
     FunctionEnd
 
 ;--------------------------------
