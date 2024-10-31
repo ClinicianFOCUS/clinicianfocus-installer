@@ -92,7 +92,7 @@
             ${If} $Is_Basic_Install == ${BST_CHECKED}
   
                 ;download the quantized mistral model
-                inetc::get /TIMEOUT=30000 "https://huggingface.co/lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-IQ3_M.gguf?download=true" "$INSTDIR\local-llm-container\models\Mistral-7B-Instruct-v0.3-IQ3_M.gguf" /END
+                inetc::get /TIMEOUT=30000 "https://huggingface.co/lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q8_0.gguf?download=true" "$INSTDIR\local-llm-container\models\Mistral-7B-Instruct-v0.3-Q8_0.gguf" /END
                 
                 ;download its template
                 inetc::get /TIMEOUT=30000 "https://github.com/chujiezheng/chat_templates/blob/main/chat_templates/mistral-instruct.jinja" "$INSTDIR\local-llm-container\models\mistral-instruct.jinja" /END
