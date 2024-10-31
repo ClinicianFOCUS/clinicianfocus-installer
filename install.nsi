@@ -99,7 +99,7 @@
                 
                 ; Save new env settings for llm-container-launch
                 FileOpen $4 "$INSTDIR\local-llm-container\.env" w
-                FileWrite $4 "MODEL_NAME=/models/Mistral-7B-Instruct-v0.3-IQ3_M.gguf$\r$\n"
+                FileWrite $4 "MODEL_NAME=/models/Mistral-7B-Instruct-v0.3-Q8_0.gguf$\r$\n"
                 FileWrite $4 "CHAT_TEMPLATE=/models/mistral-instruct.jinja$\r$\n"
                 FileClose $4
             ${EndIf}
