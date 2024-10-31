@@ -651,21 +651,69 @@
             ${NSD_SetState} $Checkbox_FreeScribe ${BST_UNCHECKED}
         ${EndIf}
 
+        
+        ; Display a recommendation message if LLM or Speech2Text is installed
+    ${If} $LLM_Installed == 1
+    ${OrIf} $Speech2Text_Installed == 1
+        ; Create a bold label for the recommendation title
+        ${NSD_CreateLabel} 0u 42u 100% 12u "Recommended Actions:"
+        Pop $0
+
+        ; Create a label for the first recommendation
+        ${NSD_CreateLabel} 0u 56u 100% 12u "1. Start Docker Desktop before launching Local LLM and Speech2Text."
+        Pop $0
+
+        ; Create a label for the second recommendation
+        ${NSD_CreateLabel} 0u 70u 100% 12u "2. Launch Local LLM and Speech2Text to build the container image."
+        Pop $0
+
+    ${EndIf}
+
         ; Display the dialog
         nsDialogs::Show
     FunctionEnd
 
+    
+    ; Function to check if Docker is running and start it if not
+    Function CheckAndStartDocker
+        ; Check if Docker is running
+        ExecWait 'docker info' $0
+        StrCmp $0 0 done
+
+        ; If Docker is not running, start Docker Desktop
+        MessageBox MB_OK "Docker is not running. Starting Docker Desktop..."
+        ExecWait '"$PROGRAMFILES64\Docker\Docker\Docker Desktop.exe"'
+        Sleep 5000 ; Wait for Docker to start
+
+        ; Check again if Docker is running
+        ExecWait 'docker info' $0
+        StrCmp $0 0 done
+
+        ; If Docker still isn't running, show an error message
+        MessageBox MB_OK "Docker could not be started. Please start Docker manually and try again."
+        Abort
+
+        done:
+    FunctionEnd
+
     ; Function that executes when leaving the finish page
     Function FinishPageLeave
+        ; Check if either LLM or Speech2Text checkbox is checked and call CheckAndStartDocker if true
+        ${NSD_GetState} $Checkbox_LLM $0
+        StrCmp $0 ${BST_CHECKED} +2
+        ${NSD_GetState} $Checkbox_Speech2Text $0
+        StrCmp $0 ${BST_CHECKED} 0 +3
+        Call CheckAndStartDocker
+
         ; Check LLM checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_LLM $0
         StrCmp $0 ${BST_CHECKED} 0 +2
-            ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
+            Exec 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
 
         ; Check Speech2Text checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_Speech2Text $0
         StrCmp $0 ${BST_CHECKED} 0 +2
-            ExecWait 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
+            Exec 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
 
         ; Check FreeScribe checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_FreeScribe $0
