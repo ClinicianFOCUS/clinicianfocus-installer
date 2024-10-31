@@ -791,4 +791,9 @@
             ; Close the file
             FileClose $3
         ${EndIf}
+
+        ; If not basic set install size without mistral model
+        ${If} $Is_Adv_Install == ${BST_CHECKED}
+            SectionSetSize ${SEC_LLM} 43.0
+        ${EndIf}
     FunctionEnd
