@@ -75,7 +75,11 @@
     ; Custom pages
     Page custom ConditionalModelPageCreate ModelPageLeave
     Page custom ConditionalWhisperPageCreate WhisperSettingsPageLeave
+
+    ; Custom function called when leaving the InstallFiles page
+    !define MUI_PAGE_CUSTOMFUNCTION_LEAVE InsfilesPageLeave
     !insertmacro MUI_PAGE_INSTFILES
+
     Page custom FinishPageCreate FinishPageLeave
 
 ; define uninstaller pages
@@ -247,6 +251,7 @@
         ${EndIf}
     FunctionEnd
 
+    ; Function to execute when leaving the Component page
     Function ComponentsPageLeave
         ; Initialize the count of selected components
         StrCpy $0 0
@@ -274,6 +279,12 @@
         MessageBox MB_OK "You must select at least one components to proceed."
         Abort
 
+    FunctionEnd
+
+    ; Function to execute when leaving the InstallFiles page
+    ; Goes to the next page after the installation is complete
+    Function InsfilesPageLeave
+        SetAutoClose true
     FunctionEnd
 
 ;--------------------------------
