@@ -89,6 +89,23 @@
             SetOutPath "$INSTDIR\local-llm-container"
             File ".\local-llm-container\*.*"
             StrCpy $LLM_Installed 1
+            ${If} $Is_Basic_Install == ${BST_CHECKED}
+  
+                ;download the quantized mistral model
+                inetc::get /TIMEOUT=30000 "https://huggingface.co/lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q8_0.gguf?download=true" "$INSTDIR\local-llm-container\models\Mistral-7B-Instruct-v0.3-Q8_0.gguf" /END
+                
+                ;download its template
+                inetc::get /TIMEOUT=30000 "https://github.com/chujiezheng/chat_templates/blob/main/chat_templates/mistral-instruct.jinja" "$INSTDIR\local-llm-container\models\mistral-instruct.jinja" /END
+                
+                ; Save new env settings for llm-container-launch
+                FileOpen $4 "$INSTDIR\local-llm-container\.env" w
+                FileWrite $4 "MODEL_NAME=/models/Mistral-7B-Instruct-v0.3-Q8_0.gguf$\r$\n"
+                FileWrite $4 "CHAT_TEMPLATE=/models/mistral-instruct.jinja$\r$\n"
+                FileClose $4
+            ${EndIf}
+                
+                
+            
         SectionEnd
 
         Section "WSL2 for LLM" SEC_WSL_LLM
@@ -732,6 +749,10 @@
 
         ; Setuo the defaults for s2t container
         ${If} $Is_Basic_Install == ${BST_CHECKED}
+            MessageBox MB_OK "Basic Install selected. Please note, the basic install will download the 8gb Mistral 7b AI Model. This may take a while, feel free to grab a coffee!"
+
+            ; Add the required amount for mistral model
+            SectionSetSize ${SEC_LLM} 8000000
             ; Create the .env directories for the Speech2Text container
             CreateDirectory "$INSTDIR\speech2text-container"
 
@@ -770,5 +791,10 @@
 
             ; Close the file
             FileClose $3
+        ${EndIf}
+
+        ; If not basic set install size without mistral model
+        ${If} $Is_Adv_Install == ${BST_CHECKED}
+            SectionSetSize ${SEC_LLM} 43.0
         ${EndIf}
     FunctionEnd
