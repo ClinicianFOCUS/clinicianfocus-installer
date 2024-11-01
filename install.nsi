@@ -64,7 +64,9 @@
 
     ; Components page with condition
     !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowComponents
-    !insertmacro MUI_PAGE_COMPONENTS 
+    ; Custom function to check if at least one component is selected
+    !define MUI_PAGE_CUSTOMFUNCTION_LEAVE ComponentsPageLeave
+    !insertmacro MUI_PAGE_COMPONENTS
 
     ; Directory page with condition
     !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowDirectory
@@ -73,9 +75,19 @@
     ; Custom pages
     Page custom ConditionalModelPageCreate ModelPageLeave
     Page custom ConditionalWhisperPageCreate WhisperSettingsPageLeave
+
+    ; Custom function called when leaving the InstallFiles page
+    !define MUI_PAGE_CUSTOMFUNCTION_LEAVE InsfilesPageLeave
     !insertmacro MUI_PAGE_INSTFILES
+
     Page custom FinishPageCreate FinishPageLeave
 
+; define uninstaller pages
+    !insertmacro MUI_UNPAGE_CONFIRM
+    !insertmacro MUI_UNPAGE_INSTFILES
+    !insertmacro MUI_UNPAGE_FINISH
+
+; define language
     !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
@@ -113,7 +125,7 @@
                 Call InstallWSL2
             ${Else}
                 ${If} $WSL_Installed_NotificationDone == 0
-                    MessageBox MB_OK "WSL2 is already installed on your system."
+                    DetailPrint "WSL2 is already installed on your system."
                     StrCpy $WSL_Installed_NotificationDone 1
                 ${EndIf}
             ${EndIf}
@@ -124,7 +136,7 @@
                 Call InstallDocker
             ${Else}
                 ${If} $Docker_Installed_NotificationDone == 0
-                    MessageBox MB_OK "Docker is already installed on your system."
+                    DetailPrint "Docker is already installed on your system."
                     StrCpy $Docker_Installed_NotificationDone 1
                 ${EndIf}
             ${EndIf}
@@ -165,7 +177,7 @@
                 Call InstallWSL2
             ${Else}
                 ${If} $WSL_Installed_NotificationDone == 0
-                    MessageBox MB_OK "WSL2 is already installed on your system."
+                    DetailPrint "WSL2 is already installed on your system."
                 ${EndIf}
             ${EndIf}
         SectionEnd
@@ -175,7 +187,7 @@
                 Call InstallDocker
             ${Else}
                 ${If} $Docker_Installed_NotificationDone == 0
-                    MessageBox MB_OK "Docker is already installed on your system."
+                    DetailPrint "Docker is already installed on your system."
                 ${EndIf}
             ${EndIf}
         SectionEnd
@@ -254,6 +266,42 @@
         ${Else}
             MessageBox MB_OK "WSL2 download failed (Error: $R0). Please install WSL2 manually after the installation."
         ${EndIf}
+    FunctionEnd
+
+    ; Function to execute when leaving the Component page
+    Function ComponentsPageLeave
+        ; Initialize the count of selected components
+        StrCpy $0 0
+
+        ; Check if Local LLM is selected
+        SectionGetFlags ${SEC_LLM} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+        StrCmp $1 ${SF_SELECTED} 0 +2
+            IntOp $0 $0 + 1
+
+        ; Check if Speech2Text is selected
+        SectionGetFlags ${SEC_S2T} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+        StrCmp $1 ${SF_SELECTED} 0 +2
+            IntOp $0 $0 + 1
+
+        ; Check if FreeScribe is selected
+        SectionGetFlags ${SEC_FREESCRIBE} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+        StrCmp $1 ${SF_SELECTED} 0 +2
+            IntOp $0 $0 + 1
+
+        ; If user has selected 0 components, show a message and abort
+        IntCmp $0 1 +3 0 +3
+        MessageBox MB_OK "You must select at least one components to proceed."
+        Abort
+
+    FunctionEnd
+
+    ; Function to execute when leaving the InstallFiles page
+    ; Goes to the next page after the installation is complete
+    Function InsfilesPageLeave
+        SetAutoClose true
     FunctionEnd
 
 ;--------------------------------
@@ -638,45 +686,105 @@
             Abort
         ${EndIf}
 
+        ; Initialize the vertical position for the first checkbox
+        StrCpy $1 0
+
         ; Create checkboxes for each installed component
         ; Only show checkboxes for components that were actually installed
         
         ; Check if LLM was installed and create its checkbox if true
         ${If} $LLM_Installed == 1
-            ${NSD_CreateCheckbox} 0u 0u 100% 12u "Launch Local LLM"
+            ${NSD_CreateCheckbox} 0u $1 100% 12u "Launch Local LLM"
             Pop $Checkbox_LLM
             ${NSD_SetState} $Checkbox_LLM ${BST_UNCHECKED}
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
         ${EndIf}
 
         ; Check if Speech2Text was installed and create its checkbox if true
         ${If} $Speech2Text_Installed == 1
-            ${NSD_CreateCheckbox} 0u 14u 100% 12u "Launch Speech2Text"
+            ${NSD_CreateCheckbox} 0u $1 100% 12u "Launch Speech2Text"
             Pop $Checkbox_Speech2Text
             ${NSD_SetState} $Checkbox_Speech2Text ${BST_UNCHECKED}
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
         ${EndIf}
 
         ; Check if FreeScribe was installed and create its checkbox if true
         ${If} $FreeScribe_Installed == 1
-            ${NSD_CreateCheckbox} 0u 28u 100% 12u "Launch FreeScribe"
+            ${NSD_CreateCheckbox} 0u $1 100% 12u "Launch FreeScribe"
             Pop $Checkbox_FreeScribe
             ${NSD_SetState} $Checkbox_FreeScribe ${BST_UNCHECKED}
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
         ${EndIf}
+
+        
+        ; Display a recommendation message if LLM or Speech2Text is installed
+        ${If} $LLM_Installed == 1
+        ${OrIf} $Speech2Text_Installed == 1
+            ; Create a bold label for the recommendation title
+            IntOp $1 $1 + 5u ; Increment the vertical position for the next checkbox
+            ${NSD_CreateLabel} 0u $1 100% 12u "Recommended Actions:"
+            Pop $0
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
+
+            ; Create a label for the first recommendation
+            ${NSD_CreateLabel} 0u $1 100% 12u "1. Start Docker Desktop before launching Local LLM and Speech2Text."
+            Pop $0
+            IntOp $1 $1 + 20u ; Increment the vertical position for the next checkbox
+
+            ; Create a label for the second recommendation
+            ${NSD_CreateLabel} 0u $1 100% 12u "2. Launch Local LLM and Speech2Text to build the container image."
+            Pop $0
+        ${EndIf}
+
+        ; Get the handle of the "Close" button and change its text to "Finish"
+        GetDlgItem $0 $HWNDPARENT 1
+        SendMessage $0 ${WM_SETTEXT} 0 "STR:Finish"
 
         ; Display the dialog
         nsDialogs::Show
     FunctionEnd
 
+    
+    ; Function to check if Docker is running and start it if not
+    Function CheckAndStartDocker
+        ; Check if Docker is running
+        ExecWait 'docker info' $0
+        StrCmp $0 0 done
+
+        ; If Docker is not running, start Docker Desktop
+        MessageBox MB_OK "Docker is not running. Starting Docker Desktop..."
+        ExecWait '"$PROGRAMFILES64\Docker\Docker\Docker Desktop.exe"'
+        Sleep 5000 ; Wait for Docker to start
+
+        ; Check again if Docker is running
+        ExecWait 'docker info' $0
+        StrCmp $0 0 done
+
+        ; If Docker still isn't running, show an error message
+        MessageBox MB_OK "Docker could not be started. Please start Docker manually and try again."
+        Abort
+
+        done:
+    FunctionEnd
+
     ; Function that executes when leaving the finish page
     Function FinishPageLeave
+        ; Check if either LLM or Speech2Text checkbox is checked and call CheckAndStartDocker if true
+        ${NSD_GetState} $Checkbox_LLM $0
+        StrCmp $0 ${BST_CHECKED} +2
+        ${NSD_GetState} $Checkbox_Speech2Text $0
+        StrCmp $0 ${BST_CHECKED} 0 +3
+        Call CheckAndStartDocker
+
         ; Check LLM checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_LLM $0
         StrCmp $0 ${BST_CHECKED} 0 +2
-            ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
+            Exec 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
 
         ; Check Speech2Text checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_Speech2Text $0
         StrCmp $0 ${BST_CHECKED} 0 +2
-            ExecWait 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
+            Exec 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
 
         ; Check FreeScribe checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_FreeScribe $0
