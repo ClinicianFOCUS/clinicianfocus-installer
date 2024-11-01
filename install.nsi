@@ -274,7 +274,7 @@
         StrCmp $1 ${SF_SELECTED} 0 +2
             IntOp $0 $0 + 1
 
-        ; If fewer than two components are selected, show a message and abort
+        ; If user has selected 0 components, show a message and abort
         IntCmp $0 1 +3 0 +3
         MessageBox MB_OK "You must select at least one components to proceed."
         Abort
