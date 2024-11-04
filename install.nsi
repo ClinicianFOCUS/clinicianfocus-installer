@@ -943,44 +943,63 @@
         ${EndIf}
     FunctionEnd
 
+    ;------------------------------------------------------------------------------
+    ; Function: CompareVersions
+    ; Purpose: Compares two version numbers in format "X.Y" (e.g., "1.0", "2.3")
+    ; 
+    ; Parameters:
+    ;   Stack 1 (bottom): First version string to compare
+    ;   Stack 0 (top): Second version string to compare
+    ;
+    ; Returns:
+    ;   0: Versions are equal
+    ;   1: First version is less than second version
+    ;   2: First version is greater than second version
+    ;
+    ; Example:
+    ;   Push "1.0"    ; First version
+    ;   Push "2.0"    ; Second version
+    ;   Call CompareVersions
+    ;   Pop $R0       ; $R0 will contain 1 (1.0 < 2.0)
+    ;------------------------------------------------------------------------------
     Function CompareVersions
-        Exch $R0 ; Second version
+        Exch $R0      ; Get second version from stack into $R0
         Exch
-        Exch $R1 ; First version
+        Exch $R1      ; Get first version from stack into $R1
         Push $R2
         Push $R3
         Push $R4
         Push $R5
         
-        ; Convert versions to numbers for comparison
-        ${WordFind} $R1 "." "+1" $R2 ; First number of first version
-        ${WordFind} $R1 "." "+2" $R3 ; Second number of first version
-        ${WordFind} $R0 "." "+1" $R4 ; First number of second version
-        ${WordFind} $R0 "." "+2" $R5 ; Second number of second version
+        ; Split version strings into major and minor numbers
+        ${WordFind} $R1 "." "+1" $R2    ; Extract major number from first version
+        ${WordFind} $R1 "." "+2" $R3    ; Extract minor number from first version
+        ${WordFind} $R0 "." "+1" $R4    ; Extract major number from second version
+        ${WordFind} $R0 "." "+2" $R5    ; Extract minor number from second version
         
-        ; Convert to integers (multiply first number by 1000)
-        IntOp $R2 $R2 * 1000
-        IntOp $R4 $R4 * 1000
+        ; Convert to comparable numbers:
+        ; Multiply major version by 1000 to handle minor version properly
+        IntOp $R2 $R2 * 1000            ; Convert first version major number
+        IntOp $R4 $R4 * 1000            ; Convert second version major number
         
-        ; Add second number
-        IntOp $R2 $R2 + $R3
-        IntOp $R4 $R4 + $R5
+        ; Add minor numbers to create complete comparable values
+        IntOp $R2 $R2 + $R3             ; First version complete number
+        IntOp $R4 $R4 + $R5             ; Second version complete number
         
-        ; Compare
-        ; R2 = SECOND VALUE ON STACK (MIN VERS); R4 = FIRST VALUE ON STACK (Current Vers) 
-        ; Check if the MIN_DRIVER_VERSION is greater than the current driver version
-        ${If} $R2 < $R4 
+        ; Compare versions and set return value
+        ${If} $R2 < $R4                 ; If first version is less than second
             StrCpy $R0 1
-        ${ElseIf} $R2 > $R4 ; Check if the MIN_DRIVER_VERSION is less than the current driver version
+        ${ElseIf} $R2 > $R4             ; If first version is greater than second
             StrCpy $R0 2
-        ${Else} ; Equals
+        ${Else}                         ; If versions are equal
             StrCpy $R0 0
         ${EndIf}
         
+        ; Restore registers from stack
         Pop $R5
         Pop $R4
         Pop $R3
         Pop $R2
         Pop $R1
-        Exch $R0
+        Exch $R0                        ; Put return value on stack
     FunctionEnd
