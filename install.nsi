@@ -272,7 +272,7 @@
         Pop $0 ; Get the return value
 
         ${If} $0 == 1
-            MessageBox MB_OK "Your NVIDIA driver version ($DriverVersion) is older than the specified latest version (${MIN_CUDA_DRIVER_VERSION}). Please update at https://www.nvidia.com/en-us/drivers/. Then contiune with the installation."
+            MessageBox MB_OK "Your NVIDIA driver version ($DriverVersion) is older than the minimum required version (${MIN_CUDA_DRIVER_VERSION}). Please update at https://www.nvidia.com/en-us/drivers/. Then contiune with the installation."
             Quit
         ${EndIf}
     FunctionEnd
