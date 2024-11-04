@@ -4,6 +4,7 @@
     !addplugindir "$NSISDIR\Plugins"
     !include "MUI2.nsh"
     !include "nsDialogs.nsh"
+    !include "WordFunc.nsh"
     !include WinVer.nsh
     !include LogicLib.nsh
     !include Sections.nsh
@@ -42,6 +43,10 @@
 
     Var ShowComponents
     Var ShowDirectory
+
+;---------------------------------
+; constants
+    !define MIN_CUDA_DRIVER_VERSION 527.41 ; The nvidia graphic driver that is compatiable with Cuda 12.1
 
 ;--------------------------------
 ;General
@@ -241,6 +246,35 @@
                 MessageBox MB_OK "Please download and install Docker manually, then click OK to continue with the installation."
         ${EndIf}
         SkipDockerInstall:
+    FunctionEnd
+
+
+    Function CheckNvidiaDrivers
+        Var /GLOBAL DriverVersion
+
+        ; Try to read from the registry
+        SetRegView 64
+        ReadRegStr $DriverVersion HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}_Display.Driver" "DisplayVersion"
+
+        ${If} $DriverVersion == ""
+            ; Fallback to 32-bit registry view
+            SetRegView 32
+            ReadRegStr $DriverVersion HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}_Display.Driver" "DisplayVersion"
+        ${EndIf}
+            
+        ; Push the version number to the stack
+        Push $DriverVersion
+        ; Push min driver version
+        Push ${MIN_CUDA_DRIVER_VERSION}
+        
+        Call CompareVersions
+
+        Pop $0 ; Get the return value
+
+        ${If} $0 == 1
+            MessageBox MB_OK "Your NVIDIA driver version ($DriverVersion) is older than the specified latest version (${MIN_CUDA_DRIVER_VERSION}). Please update at https://www.nvidia.com/en-us/drivers/. Then contiune with the installation."
+            Quit
+        ${EndIf}
     FunctionEnd
 
     Function InstallWSL2
@@ -799,6 +833,8 @@
 
     ; Function to create the installation mode selection page
     Function InstallModePageCreate
+        Call CheckNvidiaDrivers
+
         ; Set page title and description
         !insertmacro MUI_HEADER_TEXT "Installation Mode" "Select the installation mode: Basic or Advanced."
 
@@ -905,4 +941,46 @@
         ${If} $Is_Adv_Install == ${BST_CHECKED}
             SectionSetSize ${SEC_LLM} 43.0
         ${EndIf}
+    FunctionEnd
+
+    Function CompareVersions
+        Exch $R0 ; Second version
+        Exch
+        Exch $R1 ; First version
+        Push $R2
+        Push $R3
+        Push $R4
+        Push $R5
+        
+        ; Convert versions to numbers for comparison
+        ${WordFind} $R1 "." "+1" $R2 ; First number of first version
+        ${WordFind} $R1 "." "+2" $R3 ; Second number of first version
+        ${WordFind} $R0 "." "+1" $R4 ; First number of second version
+        ${WordFind} $R0 "." "+2" $R5 ; Second number of second version
+        
+        ; Convert to integers (multiply first number by 1000)
+        IntOp $R2 $R2 * 1000
+        IntOp $R4 $R4 * 1000
+        
+        ; Add second number
+        IntOp $R2 $R2 + $R3
+        IntOp $R4 $R4 + $R5
+        
+        ; Compare
+        ; R2 = SECOND VALUE ON STACK (MIN VERS); R4 = FIRST VALUE ON STACK (Current Vers) 
+        ; Check if the MIN_DRIVER_VERSION is greater than the current driver version
+        ${If} $R2 < $R4 
+            StrCpy $R0 1
+        ${ElseIf} $R2 > $R4 ; Check if the MIN_DRIVER_VERSION is less than the current driver version
+            StrCpy $R0 2
+        ${Else} ; Equals
+            StrCpy $R0 0
+        ${EndIf}
+        
+        Pop $R5
+        Pop $R4
+        Pop $R3
+        Pop $R2
+        Pop $R1
+        Exch $R0
     FunctionEnd
