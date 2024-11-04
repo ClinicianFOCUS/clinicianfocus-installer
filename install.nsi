@@ -261,7 +261,12 @@
             SetRegView 32
             ReadRegStr $DriverVersion HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}_Display.Driver" "DisplayVersion"
         ${EndIf}
-            
+
+        ; No nvidia drivers detected - show error message
+        ${If} $DriverVersion == ""
+            MessageBox MB_OK "No valid Nvidia device deteced (Drivers Missing). This program relys on a Nvidia GPU to run. Functionality is not guaranteed without a Nvidia GPU."
+            Goto driver_check_end
+        ${EndIf}
         ; Push the version number to the stack
         Push $DriverVersion
         ; Push min driver version
@@ -275,6 +280,7 @@
             MessageBox MB_OK "Your NVIDIA driver version ($DriverVersion) is older than the minimum required version (${MIN_CUDA_DRIVER_VERSION}). Please update at https://www.nvidia.com/en-us/drivers/. Then contiune with the installation."
             Quit
         ${EndIf}
+        driver_check_end:
     FunctionEnd
 
     Function InstallWSL2
