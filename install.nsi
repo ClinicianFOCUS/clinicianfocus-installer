@@ -801,7 +801,7 @@
         StrCmp $0 0 done
 
         ; If Docker still isn't running, show an error message
-        MessageBox MB_OK "Docker could not be started. Please start Docker manually and try again."
+        MessageBox MB_OK "Docker could not be started or took too long. Please start Docker manually and try again."
         Abort
 
         done:
@@ -828,7 +828,8 @@
 
         ; Check FreeScribe checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_FreeScribe $0
-        StrCmp $0 ${BST_CHECKED} 0 +2
+        StrCmp $0 ${BST_CHECKED} 0 +3
+            MessageBox MB_OK|MB_TOPMOST "Please make sure that the Local LLM and Speech2Text Docker containers are running successfully for FreeScribe to function properly."
             Exec '"$APPDATA\freescribe\freescribe-client.exe"'
 
         ; Cleanup: Remove registry entries used during installation
