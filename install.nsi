@@ -786,6 +786,13 @@
         ${If} $0 == ${BST_CHECKED}
             ; wait fir the container to be up before running the model
             ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
+            ${For} $R1 0 30
+                ExecWait 'docker container inspect -f "{{.State.Running}}" ollama' $0
+                ${If} $0 == 0
+                    ${Break}
+                ${EndIf}
+                Sleep 1000
+            ${Next}
             
             ; Create a temporary PowerShell script to run the Gemma model on Ollama
             ; This also pulls and downloads if doesnt exist
