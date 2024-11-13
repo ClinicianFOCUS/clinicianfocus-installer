@@ -108,17 +108,14 @@
             StrCpy $LLM_Installed 1
             ${If} $Is_Basic_Install == ${BST_CHECKED}
   
-                ;download the quantized mistral model
-                inetc::get /TIMEOUT=30000 "https://huggingface.co/lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q8_0.gguf?download=true" "$INSTDIR\local-llm-container\models\Mistral-7B-Instruct-v0.3-Q8_0.gguf" /END
-                
-                ;download its template
-                inetc::get /TIMEOUT=30000 "https://github.com/chujiezheng/chat_templates/blob/main/chat_templates/mistral-instruct.jinja" "$INSTDIR\local-llm-container\models\mistral-instruct.jinja" /END
-                
-                ; Save new env settings for llm-container-launch
-                FileOpen $4 "$INSTDIR\local-llm-container\.env" w
-                FileWrite $4 "MODEL_NAME=/models/Mistral-7B-Instruct-v0.3-Q8_0.gguf$\r$\n"
-                FileWrite $4 "CHAT_TEMPLATE=/models/mistral-instruct.jinja$\r$\n"
-                FileClose $4
+                ; ;download the quantized mistral model
+                ; inetc::get /TIMEOUT=30000 "https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q8_0.gguf?download=true" "$INSTDIR\models\gemma-2-2b-it-Q8_0.gguf" /END            
+
+                ; ; Save new env settings for llm-container-launch
+                ; FileOpen $4 "$INSTDIR\local-llm-container\.env" w
+                ; FileWrite $4 "MODEL_NAME=/models/Mistral-7B-Instruct-v0.3-Q8_0.gguf$\r$\n"
+                ; FileWrite $4 "CHAT_TEMPLATE=/models/mistral-instruct.jinja$\r$\n"
+                ; FileClose $4
             ${EndIf}
                 
                 
@@ -687,31 +684,6 @@
         ; Create the .env directories for the Local LLM container
         CreateDirectory "$INSTDIR"
         CreateDirectory "$INSTDIR\local-llm-container\"
-
-        ; Define the file path for the .env file
-        StrCpy $0 "$INSTDIR\local-llm-container\.env"
-
-        ; Open the .env file for writing (will create the file if it doesn't exist)
-        FileOpen $3 $0 w
-        ${If} $3 == ""
-            ; Get the last error code
-            StrCpy $0 $0 $3
-            ${If} $0 == "0"
-                MessageBox MB_OK "Error: The .env file could not be created. Reason: Access denied or no write permissions."
-            ${Else}
-                MessageBox MB_OK "Error: Could not create .env file! Error code: $0"
-            ${EndIf}
-            Abort
-        ${EndIf}
-        
-        ; Write the MODEL_NAME environment variable to the .env file
-        FileWrite $3 "MODEL_NAME=$1$\r$\n"  ; Write the selected model directly from $1
-
-        ; Write the HUGGINGFACE_TOKEN environment variable to the .env file
-        FileWrite $3 "HF_TOKEN=$2$\r$\n" ; Write the Huggingface token from $2
-
-        ; Close the file
-        FileClose $3 
     FunctionEnd
 
 ;--------------------------------
@@ -816,15 +788,38 @@
         StrCmp $0 ${BST_CHECKED} 0 +3
         Call CheckAndStartDocker
 
-        ; Check LLM checkbox state and launch if checked
-        ${NSD_GetState} $Checkbox_LLM $0
-        StrCmp $0 ${BST_CHECKED} 0 +2
-            Exec 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
-
         ; Check Speech2Text checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_Speech2Text $0
         StrCmp $0 ${BST_CHECKED} 0 +2
             Exec 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d --build'
+
+        ; Check LLM checkbox state and launch if checked
+        ${NSD_GetState} $Checkbox_LLM $0
+        StrCmp $0 ${BST_CHECKED} 0 +2
+
+        ${If} $0 == ${BST_CHECKED}
+            ; wait fir the container to be up before running the model
+            ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
+            
+            ; Create a temporary PowerShell script to run the Gemma model on Ollama
+            ; This also pulls and downloads if doesnt exist
+            FileOpen $0 "$TEMP\docker_command.ps1" w
+            FileWrite $0 "Write-Host $\"Please wait until this install is finished before using FreeScribe client.$\"$\r$\n"
+            FileWrite $0 "Write-Host $\"Downloading the Gemma model on Ollama...$\"$\r$\n"
+            FileWrite $0 "docker exec ollama ollama pull gemma2:2b-instruct-q8_0$\r$\n"
+            FileWrite $0 "Write-Host $\"Starting the Gemma model on Ollama...$\"$\r$\n"
+            FileWrite $0 "docker exec ollama ollama run gemma2:2b-instruct-q8_0$\r$\n"
+            FileWrite $0 "Write-Host $\"Gemma installed and launched on Ollama. You may now use the FreeScribe Client.$\"$\r$\n"
+            FileWrite $0 "Write-Host $\"Press any key to continue...$\" -NoNewLine$\r$\n"
+            FileWrite $0 "$$host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null$\r$\n"
+            FileClose $0
+            
+            ; Run the powershell script
+            ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\docker_command.ps1"'
+            
+            ; Clean up the powershell script
+            Delete "$TEMP\docker_command.ps1"1
+        ${EndIf}
 
         ; Check FreeScribe checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_FreeScribe $0
