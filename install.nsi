@@ -105,21 +105,7 @@
             CreateDirectory "$INSTDIR\local-llm-container\models"
             SetOutPath "$INSTDIR\local-llm-container"
             File ".\local-llm-container\*.*"
-            StrCpy $LLM_Installed 1
-            ${If} $Is_Basic_Install == ${BST_CHECKED}
-  
-                ; ;download the quantized mistral model
-                ; inetc::get /TIMEOUT=30000 "https://huggingface.co/lmstudio-community/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q8_0.gguf?download=true" "$INSTDIR\models\gemma-2-2b-it-Q8_0.gguf" /END            
-
-                ; ; Save new env settings for llm-container-launch
-                ; FileOpen $4 "$INSTDIR\local-llm-container\.env" w
-                ; FileWrite $4 "MODEL_NAME=/models/Mistral-7B-Instruct-v0.3-Q8_0.gguf$\r$\n"
-                ; FileWrite $4 "CHAT_TEMPLATE=/models/mistral-instruct.jinja$\r$\n"
-                ; FileClose $4
-            ${EndIf}
-                
-                
-            
+            StrCpy $LLM_Installed 1              
         SectionEnd
 
         Section "WSL2 for LLM" SEC_WSL_LLM
