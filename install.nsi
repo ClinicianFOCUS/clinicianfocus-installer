@@ -793,9 +793,9 @@
             FileOpen $0 "$TEMP\docker_command.ps1" w
             FileWrite $0 "Write-Host $\"Please wait until this install is finished before using FreeScribe client.$\"$\r$\n"
             FileWrite $0 "Write-Host $\"Downloading the Gemma model on Ollama...$\"$\r$\n"
-            FileWrite $0 "docker exec ollama ollama pull $MODELNAME:$\r$\n"
+            FileWrite $0 "docker exec ollama ollama pull $OLLAMA_MODEL_TO_DOWNLOAD:$\r$\n"
             FileWrite $0 "Write-Host $\"Starting the Gemma model on Ollama...$\"$\r$\n"
-            FileWrite $0 "docker exec ollama ollama run $MODELNAME:$\r$\n"
+            FileWrite $0 "docker exec ollama ollama run $OLLAMA_MODEL_TO_DOWNLOAD:$\r$\n"
             FileWrite $0 "Write-Host $\"Gemma installed and launched on Ollama. You may now use the FreeScribe Client.$\"$\r$\n"
             FileWrite $0 "Write-Host $\"Press any key to continue...$\" -NoNewLine$\r$\n"
             FileWrite $0 "$$host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null$\r$\n"
