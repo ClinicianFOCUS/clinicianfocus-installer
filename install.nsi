@@ -894,10 +894,8 @@
 
         ; Setuo the defaults for s2t container
         ${If} $Is_Basic_Install == ${BST_CHECKED}
-            MessageBox MB_OK "Basic Install selected. Please note, the basic install will download the 8gb Mistral 7b AI Model. This may take a while, feel free to grab a coffee!"
-
             ; Add the required amount for mistral model
-            SectionSetSize ${SEC_LLM} 8000000
+            SectionSetSize ${SEC_LLM} 2805000
             ; Create the .env directories for the Speech2Text container
             CreateDirectory "$INSTDIR\speech2text-container"
 
@@ -912,7 +910,7 @@
             ${EndIf}
 
             ; Write the API key and model selection to the .env file
-            FileWrite $3 "SESSION_API_KEY=GENERATE$\r$\n"
+            FileWrite $3 "SESSION_API_KEY=$\r$\n"
             FileWrite $3 "WHISPER_MODEL=medium$\r$\n"
 
             ; Close the file
@@ -923,19 +921,6 @@
 
             ; Define the file path for the .env settings
             StrCpy $0 "$INSTDIR\local-llm-container\.env"
-
-            ; Open the .env file for writing
-            FileOpen $3 $0 w
-            ${If} $3 == ""
-                MessageBox MB_OK "Error: Could not create .env file for Local LLM settings."
-                Abort
-            ${EndIf}
-
-            ; Write the MODEL_NAME environment variable to the .env file
-            FileWrite $3 "MODEL_NAME=google/gemma-2-2b-it$\r$\n"
-
-            ; Close the file
-            FileClose $3
         ${EndIf}
 
         ; If not basic set install size without mistral model
