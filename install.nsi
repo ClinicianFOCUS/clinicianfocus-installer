@@ -114,9 +114,13 @@
     FileClose $0
     
     ; Run the PowerShell script to add rule
-    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\${RuleName}_rule.ps1"'
-            
-    
+    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\${RuleName}_rule.ps1"' $R0
+
+    ; Check the return code
+    ${If} $R0 != 0
+        MessageBox MB_ICONEXCLAMATION "Failed to add firewall rule: ${RuleName}. Error code: $R0"
+    ${EndIf}
+
     ; Clean up the PowerShell script
     Delete "$TEMP\${RuleName}_rule.ps1"
 !macroend
