@@ -113,8 +113,9 @@
     FileWrite $0 "}$\r$\n"
     FileClose $0
     
-    ; Run the PowerShell script silently in the background
-    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell.exe -ArgumentList ''-NoProfile -ExecutionPolicy Bypass -File $TEMP\${RuleName}_rule.ps1'' -WindowStyle Hidden -NoNewWindow"'
+    ; Run the PowerShell script to add rule
+    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\${RuleName}_rule.ps1"'
+            
     
     ; Clean up the PowerShell script
     Delete "$TEMP\${RuleName}_rule.ps1"
