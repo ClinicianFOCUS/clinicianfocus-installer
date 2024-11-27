@@ -130,6 +130,30 @@
             ${EndIf}
         SectionEnd
 
+        Section "Inbound Firewall Rule" SEC_LLM_INBOUND_RULE
+            ; Add inbound firewall rule using PowerShell
+            ; Create a temporary PowerShell script to add inbound rule
+            FileOpen $0 "$TEMP\llm_rule.ps1" w
+            FileWrite $0 "$$RuleName = 'LLM Container'$\r$\n"
+            FileWrite $0 "$$Port = 3334$\r$\n"
+            FileWrite $0 "$$Protocol = 'TCP'$\r$\n"
+            FileWrite $0 "$$Action = 'Allow'$\r$\n"
+            FileWrite $0 "$$ruleExists = Get-NetFirewallRule -DisplayName $$RuleName -ErrorAction SilentlyContinue$\r$\n"
+            FileWrite $0 "if (-not $$ruleExists) {$\r$\n"
+            FileWrite $0 "    New-NetFirewallRule -DisplayName $$RuleName -Direction Inbound -Protocol $$Protocol -LocalPort $$Port -Action $$Action -Enabled True -Profile Domain,Public$\r$\n"
+            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName added successfully.'$\r$\n"
+            FileWrite $0 "} else {$\r$\n"
+            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName already exists.'$\r$\n"
+            FileWrite $0 "}$\r$\n"
+            FileClose $0
+            
+            ; Run the powershell script
+            ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\llm_rule.ps1"'
+            
+            ; Clean up the powershell script
+            Delete "$TEMP\llm_rule.ps1"
+        SectionEnd
+
     SectionGroupEnd
 
     SectionGroup "Speech to Text Container" SEC_GROUP_S2T
@@ -178,6 +202,30 @@
                     DetailPrint "Docker is already installed on your system."
                 ${EndIf}
             ${EndIf}
+        SectionEnd
+
+        Section "Inbound Firewall Rule" SEC_S2T_INBOUND_RULE
+            ; Add inbound firewall rule using PowerShell
+            ; Create a temporary PowerShell script to add inbound rule
+            FileOpen $0 "$TEMP\stt_rule.ps1" w
+            FileWrite $0 "$$RuleName = 'STT Container'$\r$\n"
+            FileWrite $0 "$$Port = 2224$\r$\n"
+            FileWrite $0 "$$Protocol = 'TCP'$\r$\n"
+            FileWrite $0 "$$Action = 'Allow'$\r$\n"
+            FileWrite $0 "$$ruleExists = Get-NetFirewallRule -DisplayName $$RuleName -ErrorAction SilentlyContinue$\r$\n"
+            FileWrite $0 "if (-not $$ruleExists) {$\r$\n"
+            FileWrite $0 "    New-NetFirewallRule -DisplayName $$RuleName -Direction Inbound -Protocol $$Protocol -LocalPort $$Port -Action $$Action -Enabled True -Profile Domain,Public$\r$\n"
+            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName added successfully.'$\r$\n"
+            FileWrite $0 "} else {$\r$\n"
+            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName already exists.'$\r$\n"
+            FileWrite $0 "}$\r$\n"
+            FileClose $0
+            
+            ; Run the powershell script
+            ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\stt_rule.ps1"'
+            
+            ; Clean up the powershell script
+            Delete "$TEMP\stt_rule.ps1"
         SectionEnd
 
     SectionGroupEnd
@@ -487,9 +535,11 @@
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_LLM} "Install Local LLM Container"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_LLM} "Install Docker for Local LLM (required if not already installed)"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_LLM} "Install WSL2 for Local LLM (required for Docker)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_LLM_INBOUND_RULE} "Add Inbound Rule to allow external connections"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_S2T} "Install Speech2Text Container"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_DOCKER_S2T} "Install Docker for Speech2Text (required if not already installed)"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_WSL_S2T} "Install WSL2 for Speech2Text (required for Docker)"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SEC_S2T_INBOUND_RULE} "Add Inbound Rule to allow external connections"
   !insertmacro MUI_DESCRIPTION_TEXT ${SEC_FREESCRIBE} "Install Freescribe Client"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
