@@ -96,6 +96,30 @@
     !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
+; Macro to add firewall inbound rules
+!macro AddFirewallRule RuleName Port
+    ; Create a temporary PowerShell script to add inbound rule
+    FileOpen $0 "$TEMP\${RuleName}_rule.ps1" w
+    FileWrite $0 "$$RuleName = '${RuleName}'$\r$\n"
+    FileWrite $0 "$$Port = ${Port}$\r$\n"
+    FileWrite $0 "$$Protocol = 'TCP'$\r$\n"
+    FileWrite $0 "$$Action = 'Allow'$\r$\n"
+    FileWrite $0 "$$ruleExists = Get-NetFirewallRule -DisplayName $$RuleName -ErrorAction SilentlyContinue$\r$\n"
+    FileWrite $0 "if (-not $$ruleExists) {$\r$\n"
+    FileWrite $0 "    New-NetFirewallRule -DisplayName $$RuleName -Direction Inbound -Protocol $$Protocol -LocalPort $$Port -Action $$Action -Enabled True -Profile Domain,Public$\r$\n"
+    FileWrite $0 "    Write-Host 'Inbound rule $$RuleName added successfully.'$\r$\n"
+    FileWrite $0 "} else {$\r$\n"
+    FileWrite $0 "    Write-Host 'Inbound rule $$RuleName already exists.'$\r$\n"
+    FileWrite $0 "}$\r$\n"
+    FileClose $0
+    
+    ; Run the PowerShell script silently in the background
+    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell.exe -ArgumentList ''-NoProfile -ExecutionPolicy Bypass -File $TEMP\${RuleName}_rule.ps1'' -WindowStyle Hidden -NoNewWindow"'
+    
+    ; Clean up the PowerShell script
+    Delete "$TEMP\${RuleName}_rule.ps1"
+!macroend
+;--------------------------------
 ;Installer Sections
 ; Define the installer sections
     SectionGroup "Local LLM Container" SEC_GROUP_LLM
@@ -131,27 +155,7 @@
         SectionEnd
 
         Section "Inbound Firewall Rule" SEC_LLM_INBOUND_RULE
-            ; Add inbound firewall rule using PowerShell
-            ; Create a temporary PowerShell script to add inbound rule
-            FileOpen $0 "$TEMP\llm_rule.ps1" w
-            FileWrite $0 "$$RuleName = 'LLM Container'$\r$\n"
-            FileWrite $0 "$$Port = 3334$\r$\n"
-            FileWrite $0 "$$Protocol = 'TCP'$\r$\n"
-            FileWrite $0 "$$Action = 'Allow'$\r$\n"
-            FileWrite $0 "$$ruleExists = Get-NetFirewallRule -DisplayName $$RuleName -ErrorAction SilentlyContinue$\r$\n"
-            FileWrite $0 "if (-not $$ruleExists) {$\r$\n"
-            FileWrite $0 "    New-NetFirewallRule -DisplayName $$RuleName -Direction Inbound -Protocol $$Protocol -LocalPort $$Port -Action $$Action -Enabled True -Profile Domain,Public$\r$\n"
-            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName added successfully.'$\r$\n"
-            FileWrite $0 "} else {$\r$\n"
-            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName already exists.'$\r$\n"
-            FileWrite $0 "}$\r$\n"
-            FileClose $0
-            
-            ; Run the powershell script
-            ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\llm_rule.ps1"'
-            
-            ; Clean up the powershell script
-            Delete "$TEMP\llm_rule.ps1"
+            !insertmacro AddFirewallRule "LLM Container" 3334
         SectionEnd
 
     SectionGroupEnd
@@ -205,27 +209,7 @@
         SectionEnd
 
         Section "Inbound Firewall Rule" SEC_S2T_INBOUND_RULE
-            ; Add inbound firewall rule using PowerShell
-            ; Create a temporary PowerShell script to add inbound rule
-            FileOpen $0 "$TEMP\stt_rule.ps1" w
-            FileWrite $0 "$$RuleName = 'STT Container'$\r$\n"
-            FileWrite $0 "$$Port = 2224$\r$\n"
-            FileWrite $0 "$$Protocol = 'TCP'$\r$\n"
-            FileWrite $0 "$$Action = 'Allow'$\r$\n"
-            FileWrite $0 "$$ruleExists = Get-NetFirewallRule -DisplayName $$RuleName -ErrorAction SilentlyContinue$\r$\n"
-            FileWrite $0 "if (-not $$ruleExists) {$\r$\n"
-            FileWrite $0 "    New-NetFirewallRule -DisplayName $$RuleName -Direction Inbound -Protocol $$Protocol -LocalPort $$Port -Action $$Action -Enabled True -Profile Domain,Public$\r$\n"
-            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName added successfully.'$\r$\n"
-            FileWrite $0 "} else {$\r$\n"
-            FileWrite $0 "    Write-Host 'Inbound rule $$RuleName already exists.'$\r$\n"
-            FileWrite $0 "}$\r$\n"
-            FileClose $0
-            
-            ; Run the powershell script
-            ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\stt_rule.ps1"'
-            
-            ; Clean up the powershell script
-            Delete "$TEMP\stt_rule.ps1"
+            !insertmacro AddFirewallRule "STT Container" 2224
         SectionEnd
 
     SectionGroupEnd
