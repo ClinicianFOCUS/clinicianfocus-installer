@@ -598,7 +598,7 @@
     FunctionEnd
 
     Function FreeScribeArchPageCreate
-        !insertmacro MUI_HEADER_TEXT "Architecture Selection" "Choose your preferred installation architecture based on your hardware"
+        !insertmacro MUI_HEADER_TEXT "Architecture Selection For FreeScribe" "Choose your preferred installation architecture for FreeScribe based on your hardware"
 
         nsDialogs::Create 1018
         Pop $0
@@ -608,7 +608,7 @@
         ${EndIf}
 
         ; Main instruction text for architecture selection
-        ${NSD_CreateLabel} 0 0 100% 12u "Choose your preferred installation architecture based on your hardware:"
+        ${NSD_CreateLabel} 0 0 100% 12u "Choose your preferred installation architecture for FreeScribe based on your hardware:"
         Pop $0
 
         ; Radio button for CPU
