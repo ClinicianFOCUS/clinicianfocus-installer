@@ -44,6 +44,10 @@
     Var ShowComponents
     Var ShowDirectory
 
+    Var /GLOBAL CPU_RADIO
+    Var /GLOBAL NVIDIA_RADIO
+    Var /GLOBAL SELECTED_ARCH_FREESCRIBE
+
 ;---------------------------------
 ; constants
     !define MIN_CUDA_DRIVER_VERSION 527.41 ; The nvidia graphic driver that is compatiable with Cuda 12.1
@@ -72,6 +76,8 @@
     ; Custom function to check if at least one component is selected
     !define MUI_PAGE_CUSTOMFUNCTION_LEAVE ComponentsPageLeave
     !insertmacro MUI_PAGE_COMPONENTS
+
+    Page custom ConditionalFreeScribeArchPageCreate
 
     ; Directory page with condition
     !define MUI_PAGE_CUSTOMFUNCTION_PRE ShouldShowDirectory
@@ -189,7 +195,7 @@
         File ".\freescribe\FreeScribeInstaller_windows.exe"
 
         ; Execute Freescribe installer silently
-        ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /D=$APPDATA\FreeScribe'
+        ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /ARCH=$SELECTED_ARCH_FREESCRIBE'
 
         StrCpy $FreeScribe_Installed 1
     SectionEnd
@@ -580,6 +586,69 @@
                 StrCpy $INSTDIR $1
             ${EndIf}
             Abort ; Skip the page
+        ${EndIf}
+    FunctionEnd
+
+    Function ConditionalFreeScribeArchPageCreate
+        ; Check if FreeScribe is selected
+        SectionGetFlags ${SEC_FREESCRIBE} $0
+        IntOp $0 $0 & ${SF_SELECTED}
+        StrCmp $0 ${SF_SELECTED} 0 +2
+            Call FreeScribeArchPageCreate
+    FunctionEnd
+
+    Function FreeScribeArchPageCreate
+        !insertmacro MUI_HEADER_TEXT "Architecture Selection For FreeScribe" "Choose your preferred installation architecture for FreeScribe based on your hardware"
+
+        nsDialogs::Create 1018
+        Pop $0
+
+        ${If} $0 == error
+            Abort
+        ${EndIf}
+
+        ; Main instruction text for architecture selection
+        ${NSD_CreateLabel} 0 0 100% 12u "Choose your preferred installation architecture for FreeScribe based on your hardware:"
+        Pop $0
+
+        ; Radio button for CPU
+        ${NSD_CreateRadioButton} 10 15u 100% 10u "CPU"
+        Pop $CPU_RADIO
+        ${NSD_Check} $CPU_RADIO
+        StrCpy $SELECTED_ARCH_FREESCRIBE "CPU"
+
+        ; CPU explanation text (grey with padding)
+        ${NSD_CreateLabel} 20 25u 100% 20u "Recommended for most users. Runs on any modern processor and provides good performance for general use."
+        Pop $0
+        SetCtlColors $0 808080 transparent
+
+        ; Radio button for NVIDIA
+        ${NSD_CreateRadioButton} 10 55u 100% 10u "NVIDIA"
+        Pop $NVIDIA_RADIO
+
+        ; NVIDIA explanation text (grey with padding)
+        ${NSD_CreateLabel} 20 65u 100% 30u "Choose this option if you have an NVIDIA GPU. Provides accelerated performance. Only select if you have a Nvidia GPU installed."
+        Pop $0
+        SetCtlColors $0 808080 transparent
+
+        ; Bottom padding (10u of space)
+        ${NSD_CreateLabel} 0 95u 100% 10u ""
+        Pop $0
+
+        ${NSD_OnClick} $CPU_RADIO OnRadioClick
+        ${NSD_OnClick} $NVIDIA_RADIO OnRadioClick
+
+        nsDialogs::Show
+    FunctionEnd
+
+    ; Callback function for radio button clicks
+    Function OnRadioClick
+        Pop $0 ; Get the handle of the clicked control
+
+        ${If} $0 == $CPU_RADIO
+            StrCpy $SELECTED_ARCH_FREESCRIBE "CPU"
+        ${ElseIf} $0 == $NVIDIA_RADIO
+            StrCpy $SELECTED_ARCH_FREESCRIBE "NVIDIA"
         ${EndIf}
     FunctionEnd
 
