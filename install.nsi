@@ -106,7 +106,7 @@
     FileWrite $0 "$$Action = 'Allow'$\r$\n"
     FileWrite $0 "$$ruleExists = Get-NetFirewallRule -DisplayName $$RuleName -ErrorAction SilentlyContinue$\r$\n"
     FileWrite $0 "if (-not $$ruleExists) {$\r$\n"
-    FileWrite $0 "    New-NetFirewallRule -DisplayName $$RuleName -Direction Inbound -Protocol $$Protocol -LocalPort $$Port -Action $$Action -Enabled True -Profile Domain,Public$\r$\n"
+    FileWrite $0 "    New-NetFirewallRule -DisplayName $$RuleName -Direction Inbound -Protocol $$Protocol -LocalPort $$Port -Action $$Action -Enabled True -Profile Domain,Private$\r$\n"
     FileWrite $0 "    Write-Host 'Inbound rule $$RuleName added successfully.'$\r$\n"
     FileWrite $0 "} else {$\r$\n"
     FileWrite $0 "    Write-Host 'Inbound rule $$RuleName already exists.'$\r$\n"
