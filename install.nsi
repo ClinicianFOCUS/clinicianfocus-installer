@@ -122,8 +122,11 @@
     FileWrite $0 "}$\r$\n"
     FileClose $0
     
+    DetailPrint "Adding inbound firewall rule: ${RuleName} (Port: ${Port})"
     ; Run the PowerShell script to add rule
-    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\${RuleName}_rule.ps1"' $R0
+    nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\${RuleName}_rule.ps1"'
+    Pop $R0
+    Pop $R1
 
     ; Check the return code
     ${If} $R0 != 0
