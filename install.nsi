@@ -521,9 +521,7 @@
 
         ; Write the API key and model selection to the whisper/.env file
         FileWrite $3 "SESSION_API_KEY=$APIKey$\r$\n"
-        ${If} $WhisperModel != ""
-            FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
-        ${EndIf}
+        FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
 
         ; Write the API key to the LLM/.env file
         FileWrite $4 "SESSION_API_KEY=$APIKey$\r$\n"
@@ -1028,31 +1026,16 @@
         ${If} $Is_Basic_Install == ${BST_CHECKED}
             ; Add the required amount for mistral model
             SectionSetSize ${SEC_LLM} 2805000
-            ; Create the .env directories for the Speech2Text container
-            CreateDirectory "$INSTDIR\speech2text-container"
 
-            ; Define the file path for the .env settings
-            StrCpy $0 "$INSTDIR\speech2text-container\.env"
-
-            ; Open the .env file for writing
-            FileOpen $3 $0 w
-            ${If} $3 == ""
-                MessageBox MB_OK "Error: Could not create .env file for Speech2Text settings."
+            ; Generate a random API key
+            ExecDos::exec /TIMEOUT=5000 /NOUNLOAD /OUTPUT=$APIKey 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
+            ${If} $APIKey == ""
+                MessageBox MB_OK "Error: Could not generate API key."
                 Abort
             ${EndIf}
 
-            ; Write the API key and model selection to the .env file
-            FileWrite $3 "SESSION_API_KEY=$\r$\n"
-            FileWrite $3 "WHISPER_MODEL=medium$\r$\n"
-
-            ; Close the file
-            FileClose $3
-
-            ; Create the .env directories for the Local LLM container
-            CreateDirectory "$INSTDIR\local-llm-container"
-
-            ; Define the file path for the .env settings
-            StrCpy $0 "$INSTDIR\local-llm-container\.env"
+            ; Call the macro to write the .env files
+            !insertmacro WriteEnvFiles $APIKey "medium"
         ${EndIf}
 
         ; If not basic set install size without mistral model
