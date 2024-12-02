@@ -753,16 +753,48 @@
             Abort
         ${EndIf}
 
+        ; Initialize the vertical position for the first checkbox
+        StrCpy $1 0
+
+        ; Create a label for the API key
+        ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
+        Pop $0
+        IntOp $1 $1 + 20 ; Increment the vertical position
 
         ; Create an Edit control to display the API key
-        ${NSD_CreateText} 0u 0u 100% 12u "$APIKey"
+        ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
         Pop $0
+        ; Make the text box read-only
         SendMessage $0 ${EM_SETREADONLY} 1 0
+        IntOp $1 $1 + 25 ; Increment the vertical position
 
-        ; Create an Edit control to display the IP address
-        ${NSD_CreateText} 0u 14u 100% 12u "$PrimaryIP"
-        Pop $0
-        SendMessage $0 ${EM_SETREADONLY} 1 0
+        ${If} $LLM_Installed == 1
+            ; Create a label for the LLM endpoint
+            ${NSD_CreateLabel} 0u $1 100% 12u "Endpoint For LLM:"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Create an Edit control to display the IP address
+            ${NSD_CreateText} 0u $1 100% 12u "https://$PrimaryIP:3334/v1"
+            Pop $0
+            ; Make the text box read-only
+            SendMessage $0 ${EM_SETREADONLY} 1 0
+            IntOp $1 $1 + 25 ; Increment the vertical position
+        ${EndIf}
+        
+        ${If} $Speech2Text_Installed == 1
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "Endpoint For S2T:"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Create an Edit control to display the IP address
+            ${NSD_CreateText} 0u $1 100% 12u "https://$PrimaryIP:2224/whisperaudio"
+            Pop $0
+            ; Make the text box read-only
+            SendMessage $0 ${EM_SETREADONLY} 1 0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+        ${EndIf}
 
         nsDialogs::Show
 
