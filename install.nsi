@@ -620,9 +620,9 @@
         ShowWindow $0 ${SW_HIDE}
 
         ; Add items to dropdown
-        ${NSD_CB_AddString} $DropDown_Model "google/gemma-2-2b-it"
+        ${NSD_CB_AddString} $DropDown_Model "gemma2:2b-instruct-q8_0"
         ${NSD_CB_AddString} $DropDown_Model "Custom"
-        ${NSD_CB_SelectString} $DropDown_Model "google/gemma-2-2b-it"
+        ${NSD_CB_SelectString} $DropDown_Model "gemma2:2b-instruct-q8_0"
 
         ; Create input for Huggingface Token
         ${NSD_CreateLabel} 0u 44u 100% 12u "Huggingface Token:"
