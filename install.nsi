@@ -1093,9 +1093,10 @@
             ${EndIf}
 
             MessageBox MB_OK "Your API key is: $APIKey"
+            StrCpy $WhisperModel "medium"
 
             ; Call the macro to write the .env files
-            !insertmacro WriteEnvFiles $APIKey "medium"
+            !insertmacro WriteEnvFiles $APIKey $WhisperModel
         ${EndIf}
 
         ; If not basic set install size without mistral model
