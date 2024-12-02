@@ -740,7 +740,6 @@
             MessageBox MB_OK "Error: Could not retrieve IP address of the primary network adapter."
             Abort
         ${EndIf}
-        MessageBox MB_OK "Primary IP Address: $PrimaryIP"
     FunctionEnd
 
     ; Function to create the API Info page
@@ -1124,7 +1123,6 @@
                 Abort
             ${EndIf}
 
-            MessageBox MB_OK "Your API key is: $APIKey"
             StrCpy $WhisperModel "medium"
 
             ; Call the macro to write the .env files
