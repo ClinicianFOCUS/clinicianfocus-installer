@@ -29,10 +29,10 @@
     Var Docker_Installed_NotificationDone
     Var WSL_Installed_NotificationDone
 
-    Var Input_WhisperAPIKey
+    Var Input_APIKey
     Var DropDown_WhisperModel
 
-    Var WhisperAPIKey
+    Var APIKey
     Var WhisperModel
 
     Var Checkbox_BasicInstall
@@ -460,7 +460,7 @@
         ; Create a label for the API key input
         ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
         ${NSD_CreateText} 0u 14u 100% 12u ""
-        Pop $Input_WhisperAPIKey
+        Pop $Input_APIKey
         
         ; Create description label for API key
         ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
@@ -496,13 +496,7 @@
         nsDialogs::Show
     FunctionEnd
 
-    Function WhisperSettingsPageLeave
-        ; Get the API key entered by the user
-        ${NSD_GetText} $Input_WhisperAPIKey $WhisperAPIKey
-
-        ; Get the selected Whisper model
-        ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  ; $1 will hold the user input
-
+    !macro WriteEnvFiles APIKey WhisperModel
         ; Create the .env directories for the Whisper settings
         CreateDirectory "$INSTDIR\speech2text-container"
         CreateDirectory "$INSTDIR\local-llm-container"
@@ -525,18 +519,31 @@
             Abort
         ${EndIf}
 
-        ; Write the API key and model selection to the whipser/.env file
-        FileWrite $3 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
-        FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
+        ; Write the API key and model selection to the whisper/.env file
+        FileWrite $3 "SESSION_API_KEY=$APIKey$\r$\n"
+        ${If} $WhisperModel != ""
+            FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
+        ${EndIf}
 
-        ; Write the API key and model selection to the LLM/.env file
-        FileWrite $4 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
+        ; Write the API key to the LLM/.env file
+        FileWrite $4 "SESSION_API_KEY=$APIKey$\r$\n"
 
         ; Close the whisper/.env file
         FileClose $3
 
         ; Close the LLM/.env file
         FileClose $4
+    !macroend
+
+    Function WhisperSettingsPageLeave
+        ; Get the API key entered by the user
+        ${NSD_GetText} $Input_APIKey $APIKey
+
+        ; Get the selected Whisper model
+        ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  ; $1 will hold the user input
+
+        ; Call the macro to write the .env files
+        !insertmacro WriteEnvFiles $APIKey $WhisperModel
     FunctionEnd
 
     
