@@ -458,12 +458,12 @@
         ${EndIf}
 
         ; Create a label for the API key input
-        ${NSD_CreateLabel} 0u 0u 100% 12u "Whisper Password (API Key):"
+        ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
         ${NSD_CreateText} 0u 14u 100% 12u ""
         Pop $Input_WhisperAPIKey
         
         ; Create description label for API key
-        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper service"
+        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
         Pop $0
         SetCtlColors $0 808080 transparent
 
@@ -505,24 +505,41 @@
 
         ; Create the .env directories for the Whisper settings
         CreateDirectory "$INSTDIR\speech2text-container"
+        CreateDirectory "$INSTDIR\local-llm-container"
 
         ; Define the file path for the Whisper .env settings
         StrCpy $0 "$INSTDIR\speech2text-container\.env"
+        StrCpy $1 "$INSTDIR\local-llm-container\.env"
 
         ; Open the .env file for writing
         FileOpen $3 $0 w
+        FileOpen $4 $1 w
+
         ${If} $3 == ""
             MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
             Abort
         ${EndIf}
 
-        ; Write the API key and model selection to the .env file
+        ${If} $4 == ""
+            MessageBox MB_OK "Error: Could not create .env file for LLM settings."
+            Abort
+        ${EndIf}
+
+        ; Write the API key and model selection to the whipser/.env file
         FileWrite $3 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
         FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
 
-        ; Close the file
+        ; Write the API key and model selection to the LLM/.env file
+        FileWrite $4 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
+
+        ; Close the whisper/.env file
         FileClose $3
+
+        ; Close the LLM/.env file
+        FileClose $4
     FunctionEnd
+
+    
 
 ;--------------------------------
 ;Descriptions
