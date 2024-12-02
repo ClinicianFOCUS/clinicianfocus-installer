@@ -44,6 +44,8 @@
     Var ShowComponents
     Var ShowDirectory
 
+    Var PrimaryIP
+
     Var /GLOBAL CPU_RADIO
     Var /GLOBAL NVIDIA_RADIO
     Var /GLOBAL SELECTED_ARCH_FREESCRIBE
@@ -91,6 +93,7 @@
     !define MUI_PAGE_CUSTOMFUNCTION_LEAVE InsfilesPageLeave
     !insertmacro MUI_PAGE_INSTFILES
 
+    Page custom ConditionalAPIInfoPageCreate
     Page custom FinishPageCreate FinishPageLeave
 
 ; define uninstaller pages
@@ -713,6 +716,51 @@
         ${EndIf}
     FunctionEnd
 
+    ; Conditional function to show the API Info page if the user has installed llm or s2t container
+    Function ConditionalAPIInfoPageCreate
+        ; Call CreateAPIInfoPage if either $LLM_Installed or $Speech2Text_Installed is true
+        ${If} $LLM_Installed == 1
+            Call CreateAPIInfoPage
+        ${ElseIf} $Speech2Text_Installed == 1
+            Call CreateAPIInfoPage
+        ${EndIf}
+    FunctionEnd
+
+    ; Function to get the primary IP address of the network adapter
+    Function GetPrimaryIPAddress
+        ; Get the IP address of the network adapter associated with the default gateway
+        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $$_.InterfaceIndex -eq (Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select-Object -First 1).InterfaceIndex }).IPAddress"'
+        Pop $0
+        Pop $PrimaryIP
+
+        ${If} $0 != 0
+            MessageBox MB_OK "Error: Could not retrieve IP address of the primary network adapter."
+            Abort
+        ${EndIf}
+        MessageBox MB_OK "Primary IP Address: $PrimaryIP"
+    FunctionEnd
+
+    ; Function to create the API Info page
+    Function CreateAPIInfoPage
+        call GetPrimaryIPAddress
+        nsDialogs::Create 1018
+        Pop $0
+
+        ${If} $0 == error
+            Abort
+        ${EndIf}
+
+        ; Create label for Model selection
+        ${NSD_CreateLabel} 0u 0u 100% 12u "$APIKey"
+        Pop $0
+
+        ${NSD_CreateLabel} 0u 14u 100% 12u "$PrimaryIP"
+        Pop $0
+
+        nsDialogs::Show
+
+    FunctionEnd
+
 ;--------------------------------
 ;Model Selection Page Customization using nsDialogs
 ; Define the model selection page
@@ -1028,11 +1076,16 @@
             SectionSetSize ${SEC_LLM} 2805000
 
             ; Generate a random API key
-            ExecDos::exec /TIMEOUT=5000 /NOUNLOAD /OUTPUT=$APIKey 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
-            ${If} $APIKey == ""
+            nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
+            Pop $0
+            Pop $APIKey
+
+            ${If} $0 != 0
                 MessageBox MB_OK "Error: Could not generate API key."
                 Abort
             ${EndIf}
+
+            MessageBox MB_OK "Your API key is: $APIKey"
 
             ; Call the macro to write the .env files
             !insertmacro WriteEnvFiles $APIKey "medium"
