@@ -781,8 +781,6 @@
 
         ; Check LLM checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_LLM $0
-        StrCmp $0 ${BST_CHECKED} 0 +2
-
         ${If} $0 == ${BST_CHECKED}
             ; wait fir the container to be up before running the model
             ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
