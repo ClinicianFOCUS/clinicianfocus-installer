@@ -807,7 +807,7 @@
             FileWrite $0 "    exit 1$\r$\n"
             FileWrite $0 "}$\r$\n"
             FileWrite $0 "Write-Host $\"Starting the Gemma model on Ollama...$\"$\r$\n"
-            FileWrite $0 "docker exec ollama ollama run gemma2:2b-instruct-q8_0:$\r$\n"
+            FileWrite $0 "docker exec ollama ollama run gemma2:2b-instruct-q8_0$\r$\n"
             FileWrite $0 "Write-Host $\"Gemma installed and launched on Ollama. You may now use the FreeScribe Client.$\"$\r$\n"
             FileWrite $0 "Write-Host $\"Press any key to continue...$\" -NoNewLine$\r$\n"
             FileWrite $0 "$$host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null$\r$\n"
