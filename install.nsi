@@ -750,12 +750,16 @@
             Abort
         ${EndIf}
 
-        ; Create label for Model selection
-        ${NSD_CreateLabel} 0u 0u 100% 12u "$APIKey"
-        Pop $0
 
-        ${NSD_CreateLabel} 0u 14u 100% 12u "$PrimaryIP"
+        ; Create an Edit control to display the API key
+        ${NSD_CreateText} 0u 0u 100% 12u "$APIKey"
         Pop $0
+        SendMessage $0 ${EM_SETREADONLY} 1 0
+
+        ; Create an Edit control to display the IP address
+        ${NSD_CreateText} 0u 14u 100% 12u "$PrimaryIP"
+        Pop $0
+        SendMessage $0 ${EM_SETREADONLY} 1 0
 
         nsDialogs::Show
 
