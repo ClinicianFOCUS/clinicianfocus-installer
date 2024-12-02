@@ -1112,16 +1112,8 @@
         ${If} $Is_Basic_Install == ${BST_CHECKED}
             ; Add the required amount for mistral model
             SectionSetSize ${SEC_LLM} 2805000
-
-            ; Generate a random API key
-            nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
-            Pop $0
-            Pop $APIKey
-
-            ${If} $0 != 0
-                MessageBox MB_OK "Error: Could not generate API key."
-                Abort
-            ${EndIf}
+            
+            Call GenerateAPIKey
 
             StrCpy $WhisperModel "medium"
 
@@ -1132,6 +1124,19 @@
         ; If not basic set install size without mistral model
         ${If} $Is_Adv_Install == ${BST_CHECKED}
             SectionSetSize ${SEC_LLM} 43.0
+        ${EndIf}
+    FunctionEnd
+
+    ; Function to generate API key
+    Function GenerateAPIKey
+        ; Generate a random API key
+        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
+        Pop $0
+        Pop $APIKey
+
+        ${If} $0 != 0
+            MessageBox MB_OK "Error: Could not generate API key."
+            Abort
         ${EndIf}
     FunctionEnd
 
