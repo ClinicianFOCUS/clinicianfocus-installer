@@ -29,10 +29,10 @@
     Var Docker_Installed_NotificationDone
     Var WSL_Installed_NotificationDone
 
-    Var Input_WhisperAPIKey
+    Var Input_APIKey
     Var DropDown_WhisperModel
 
-    Var WhisperAPIKey
+    Var APIKey
     Var WhisperModel
 
     Var Checkbox_BasicInstall
@@ -43,6 +43,8 @@
 
     Var ShowComponents
     Var ShowDirectory
+
+    Var PrimaryIP
 
     Var /GLOBAL CPU_RADIO
     Var /GLOBAL NVIDIA_RADIO
@@ -91,6 +93,7 @@
     !define MUI_PAGE_CUSTOMFUNCTION_LEAVE InsfilesPageLeave
     !insertmacro MUI_PAGE_INSTFILES
 
+    Page custom ConditionalAPIInfoPageCreate
     Page custom FinishPageCreate FinishPageLeave
 
 ; define uninstaller pages
@@ -119,8 +122,11 @@
     FileWrite $0 "}$\r$\n"
     FileClose $0
     
+    DetailPrint "Adding inbound firewall rule: ${RuleName} (Port: ${Port})"
     ; Run the PowerShell script to add rule
-    ExecWait 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\${RuleName}_rule.ps1"' $R0
+    nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\${RuleName}_rule.ps1"'
+    Pop $R0
+    Pop $R1
 
     ; Check the return code
     ${If} $R0 != 0
@@ -458,12 +464,12 @@
         ${EndIf}
 
         ; Create a label for the API key input
-        ${NSD_CreateLabel} 0u 0u 100% 12u "Whisper Password (API Key):"
+        ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
         ${NSD_CreateText} 0u 14u 100% 12u ""
-        Pop $Input_WhisperAPIKey
+        Pop $Input_APIKey
         
         ; Create description label for API key
-        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper service"
+        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
         Pop $0
         SetCtlColors $0 808080 transparent
 
@@ -496,33 +502,55 @@
         nsDialogs::Show
     FunctionEnd
 
-    Function WhisperSettingsPageLeave
-        ; Get the API key entered by the user
-        ${NSD_GetText} $Input_WhisperAPIKey $WhisperAPIKey
-
-        ; Get the selected Whisper model
-        ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  ; $1 will hold the user input
-
+    !macro WriteEnvFiles APIKey WhisperModel
         ; Create the .env directories for the Whisper settings
         CreateDirectory "$INSTDIR\speech2text-container"
+        CreateDirectory "$INSTDIR\local-llm-container"
 
         ; Define the file path for the Whisper .env settings
         StrCpy $0 "$INSTDIR\speech2text-container\.env"
+        StrCpy $1 "$INSTDIR\local-llm-container\.env"
 
         ; Open the .env file for writing
         FileOpen $3 $0 w
+        FileOpen $4 $1 w
+
         ${If} $3 == ""
             MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
             Abort
         ${EndIf}
 
-        ; Write the API key and model selection to the .env file
-        FileWrite $3 "SESSION_API_KEY=$WhisperAPIKey$\r$\n"
+        ${If} $4 == ""
+            MessageBox MB_OK "Error: Could not create .env file for LLM settings."
+            Abort
+        ${EndIf}
+
+        ; Write the API key and model selection to the whisper/.env file
+        FileWrite $3 "SESSION_API_KEY=$APIKey$\r$\n"
         FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
 
-        ; Close the file
+        ; Write the API key to the LLM/.env file
+        FileWrite $4 "SESSION_API_KEY=$APIKey$\r$\n"
+
+        ; Close the whisper/.env file
         FileClose $3
+
+        ; Close the LLM/.env file
+        FileClose $4
+    !macroend
+
+    Function WhisperSettingsPageLeave
+        ; Get the API key entered by the user
+        ${NSD_GetText} $Input_APIKey $APIKey
+
+        ; Get the selected Whisper model
+        ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  ; $1 will hold the user input
+
+        ; Call the macro to write the .env files
+        !insertmacro WriteEnvFiles $APIKey $WhisperModel
     FunctionEnd
+
+    
 
 ;--------------------------------
 ;Descriptions
@@ -689,6 +717,86 @@
         ${ElseIf} $0 == $NVIDIA_RADIO
             StrCpy $SELECTED_ARCH_FREESCRIBE "NVIDIA"
         ${EndIf}
+    FunctionEnd
+
+    ; Conditional function to show the API Info page if the user has installed llm or s2t container
+    Function ConditionalAPIInfoPageCreate
+        ; Call CreateAPIInfoPage if either $LLM_Installed or $Speech2Text_Installed is true
+        ${If} $LLM_Installed == 1
+            Call CreateAPIInfoPage
+        ${ElseIf} $Speech2Text_Installed == 1
+            Call CreateAPIInfoPage
+        ${EndIf}
+    FunctionEnd
+
+    ; Function to get the primary IP address of the network adapter
+    Function GetPrimaryIPAddress
+        ; Get the IP address of the network adapter associated with the default gateway
+        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $$_.InterfaceIndex -eq (Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select-Object -First 1).InterfaceIndex }).IPAddress"'
+        Pop $0
+        Pop $PrimaryIP
+
+        ${If} $0 != 0
+            MessageBox MB_OK "Error: Could not retrieve IP address of the primary network adapter."
+            Abort
+        ${EndIf}
+    FunctionEnd
+
+    ; Function to create the API Info page
+    Function CreateAPIInfoPage
+        call GetPrimaryIPAddress
+        nsDialogs::Create 1018
+        Pop $0
+
+        ${If} $0 == error
+            Abort
+        ${EndIf}
+
+        ; Initialize the vertical position for the first checkbox
+        StrCpy $1 0
+
+        ; Create a label for the API key
+        ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
+        Pop $0
+        IntOp $1 $1 + 20 ; Increment the vertical position
+
+        ; Create an Edit control to display the API key
+        ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+        Pop $0
+        ; Make the text box read-only
+        SendMessage $0 ${EM_SETREADONLY} 1 0
+        IntOp $1 $1 + 25 ; Increment the vertical position
+
+        ${If} $LLM_Installed == 1
+            ; Create a label for the LLM endpoint
+            ${NSD_CreateLabel} 0u $1 100% 12u "Endpoint For LLM:"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Create an Edit control to display the IP address
+            ${NSD_CreateText} 0u $1 100% 12u "https://$PrimaryIP:3334/v1"
+            Pop $0
+            ; Make the text box read-only
+            SendMessage $0 ${EM_SETREADONLY} 1 0
+            IntOp $1 $1 + 25 ; Increment the vertical position
+        ${EndIf}
+        
+        ${If} $Speech2Text_Installed == 1
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "Endpoint For S2T:"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Create an Edit control to display the IP address
+            ${NSD_CreateText} 0u $1 100% 12u "https://$PrimaryIP:2224/whisperaudio"
+            Pop $0
+            ; Make the text box read-only
+            SendMessage $0 ${EM_SETREADONLY} 1 0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+        ${EndIf}
+
+        nsDialogs::Show
+
     FunctionEnd
 
 ;--------------------------------
@@ -1004,36 +1112,31 @@
         ${If} $Is_Basic_Install == ${BST_CHECKED}
             ; Add the required amount for mistral model
             SectionSetSize ${SEC_LLM} 2805000
-            ; Create the .env directories for the Speech2Text container
-            CreateDirectory "$INSTDIR\speech2text-container"
+            
+            Call GenerateAPIKey
 
-            ; Define the file path for the .env settings
-            StrCpy $0 "$INSTDIR\speech2text-container\.env"
+            StrCpy $WhisperModel "medium"
 
-            ; Open the .env file for writing
-            FileOpen $3 $0 w
-            ${If} $3 == ""
-                MessageBox MB_OK "Error: Could not create .env file for Speech2Text settings."
-                Abort
-            ${EndIf}
-
-            ; Write the API key and model selection to the .env file
-            FileWrite $3 "SESSION_API_KEY=$\r$\n"
-            FileWrite $3 "WHISPER_MODEL=medium$\r$\n"
-
-            ; Close the file
-            FileClose $3
-
-            ; Create the .env directories for the Local LLM container
-            CreateDirectory "$INSTDIR\local-llm-container"
-
-            ; Define the file path for the .env settings
-            StrCpy $0 "$INSTDIR\local-llm-container\.env"
+            ; Call the macro to write the .env files
+            !insertmacro WriteEnvFiles $APIKey $WhisperModel
         ${EndIf}
 
         ; If not basic set install size without mistral model
         ${If} $Is_Adv_Install == ${BST_CHECKED}
             SectionSetSize ${SEC_LLM} 43.0
+        ${EndIf}
+    FunctionEnd
+
+    ; Function to generate API key
+    Function GenerateAPIKey
+        ; Generate a random API key
+        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
+        Pop $0
+        Pop $APIKey
+
+        ${If} $0 != 0
+            MessageBox MB_OK "Error: Could not generate API key."
+            Abort
         ${EndIf}
     FunctionEnd
 
