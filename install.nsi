@@ -346,6 +346,10 @@
         Pop $0
         Pop $1
 
+        ${If} $0 != 0
+            MessageBox MB_OK "Error: Could not retrieve your network category."
+        ${EndIf}        
+
         Push $1
         Call Trim
         Pop $1
