@@ -309,6 +309,20 @@
         driver_check_end:
     FunctionEnd
 
+    Function CheckIfPublicNetwork
+        Var /GLOBAL NetworkType
+
+        ; Get the network type
+        nsExec::ExecToStack 'powershell.exe -Command "(Get-NetConnectionProfile).NetworkCategory"'
+        Pop $0
+        Pop $1
+
+        ${If} $1 == "Public"
+            MessageBox MB_OK "Your network is set to Public. Please change your network to Private. Then continue with the installation."
+            Quit
+        ${EndIf}
+    FunctionEnd
+
     Function InstallWSL2
         ; Download the WSL2 update package
         inetc::get /TIMEOUT=30000 "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi" "$TEMP\wsl_update_x64.msi" /END
@@ -942,6 +956,7 @@
 
     ; Function to create the installation mode selection page
     Function InstallModePageCreate
+        Call CheckIfPublicNetwork
         Call CheckNvidiaDrivers
 
         ; Set page title and description
