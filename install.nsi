@@ -315,6 +315,60 @@
         driver_check_end:
     FunctionEnd
 
+    Function Trim
+        Exch $R1 ; Original string
+        Push $R2
+    
+        Loop:
+            StrCpy $R2 "$R1" 1
+            StrCmp "$R2" " " TrimLeft
+            StrCmp "$R2" "$\r" TrimLeft
+            StrCmp "$R2" "$\n" TrimLeft
+            StrCmp "$R2" "$\t" TrimLeft
+            GoTo Loop2
+        TrimLeft:	
+            StrCpy $R1 "$R1" "" 1
+            Goto Loop
+        
+        Loop2:
+            StrCpy $R2 "$R1" 1 -1
+            StrCmp "$R2" " " TrimRight
+            StrCmp "$R2" "$\r" TrimRight
+            StrCmp "$R2" "$\n" TrimRight
+            StrCmp "$R2" "$\t" TrimRight
+            GoTo Done
+        TrimRight:	
+            StrCpy $R1 "$R1" -1
+            Goto Loop2
+        
+        Done:
+            Pop $R2
+            Exch $R1
+    FunctionEnd
+
+    Function CheckIfPublicNetwork
+        Check_Network:
+            ; Get the network type
+            nsExec::ExecToStack 'powershell.exe -Command "(Get-NetConnectionProfile).NetworkCategory"'
+            Pop $0
+            Pop $1
+
+            ${If} $0 != 0
+                MessageBox MB_RETRYCANCEL "Error: Could not retrieve your network category." IDRETRY Check_Network IDCANCEL quit
+            ${EndIf}        
+
+            Push $1
+            Call Trim
+            Pop $1
+
+            ${If} $1 == "Public"
+                MessageBox MB_RETRYCANCEL "Your network is set to Public. Please change your network to Private. Then continue with the installation." IDRETRY Check_Network IDCANCEL quit
+            ${EndIf}
+            Return
+        quit:
+            Quit
+    FunctionEnd
+
     Function InstallWSL2
         ; Download the WSL2 update package
         inetc::get /TIMEOUT=30000 "https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi" "$TEMP\wsl_update_x64.msi" /END
@@ -1048,6 +1102,7 @@
 
     ; Function to create the installation mode selection page
     Function InstallModePageCreate
+        Call CheckIfPublicNetwork
         Call CheckNvidiaDrivers
 
         ; Set page title and description
