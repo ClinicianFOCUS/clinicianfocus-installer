@@ -341,25 +341,26 @@
     FunctionEnd
 
     Function CheckIfPublicNetwork
-        ; Get the network type
-        nsExec::ExecToStack 'powershell.exe -Command "(Get-NetConnectionProfile).NetworkCategory"'
-        Pop $0
-        Pop $1
+        Check_Network:
+            ; Get the network type
+            nsExec::ExecToStack 'powershell.exe -Command "(Get-NetConnectionProfile).NetworkCategory"'
+            Pop $0
+            Pop $1
 
-        ${If} $0 != 0
-            MessageBox MB_OK "Error: Could not retrieve your network category."
-        ${EndIf}        
+            ${If} $0 != 0
+                MessageBox MB_RETRYCANCEL "Error: Could not retrieve your network category." IDRETRY Check_Network IDCANCEL quit
+            ${EndIf}        
 
-        Push $1
-        Call Trim
-        Pop $1
+            Push $1
+            Call Trim
+            Pop $1
 
-        ${If} $1 == "Public"
-            MessageBox MB_OK "Your network is set to Public. Please change your network to Private. Then continue with the installation."
+            ${If} $1 == "Public"
+                MessageBox MB_RETRYCANCEL "Your network is set to Public. Please change your network to Private. Then continue with the installation." IDRETRY Check_Network IDCANCEL quit
+            ${EndIf}
+            Return
+        quit:
             Quit
-        ${EndIf}
-
-
     FunctionEnd
 
     Function InstallWSL2
