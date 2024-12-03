@@ -836,9 +836,9 @@
         ShowWindow $0 ${SW_HIDE}
 
         ; Add items to dropdown
-        ${NSD_CB_AddString} $DropDown_Model "google/gemma-2-2b-it"
+        ${NSD_CB_AddString} $DropDown_Model "gemma2:2b-instruct-q8_0"
         ${NSD_CB_AddString} $DropDown_Model "Custom"
-        ${NSD_CB_SelectString} $DropDown_Model "google/gemma-2-2b-it"
+        ${NSD_CB_SelectString} $DropDown_Model "gemma2:2b-instruct-q8_0"
 
         ; Create input for Huggingface Token
         ${NSD_CreateLabel} 0u 44u 100% 12u "Huggingface Token:"
@@ -997,8 +997,6 @@
 
         ; Check LLM checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_LLM $0
-        StrCmp $0 ${BST_CHECKED} 0 +2
-
         ${If} $0 == ${BST_CHECKED}
             ; wait fir the container to be up before running the model
             ExecWait 'docker-compose -f "$INSTDIR\local-llm-container\docker-compose.yml" up -d --build'
@@ -1023,7 +1021,7 @@
             FileWrite $0 "    exit 1$\r$\n"
             FileWrite $0 "}$\r$\n"
             FileWrite $0 "Write-Host $\"Starting the Gemma model on Ollama...$\"$\r$\n"
-            FileWrite $0 "docker exec ollama ollama run gemma2:2b-instruct-q8_0:$\r$\n"
+            FileWrite $0 "docker exec ollama ollama run gemma2:2b-instruct-q8_0$\r$\n"
             FileWrite $0 "Write-Host $\"Gemma installed and launched on Ollama. You may now use the FreeScribe Client.$\"$\r$\n"
             FileWrite $0 "Write-Host $\"Press any key to continue...$\" -NoNewLine$\r$\n"
             FileWrite $0 "$$host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null$\r$\n"
