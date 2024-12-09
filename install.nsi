@@ -556,6 +556,17 @@
         nsDialogs::Show
     FunctionEnd
 
+    !macro HasEnvFiles Container
+        ; Check if the .env files exist
+        IfFileExists "$INSTDIR\$Container\.env" EnvFound EnvNotFound
+
+        EnvFound:
+            Return 1
+        EnvNotFound:
+            Return 0
+    !macroend
+    
+
     !macro WriteEnvFiles APIKey WhisperModel
         ; Create the .env directories for the Whisper settings
         CreateDirectory "$INSTDIR\speech2text-container"
@@ -603,8 +614,6 @@
         ; Call the macro to write the .env files
         !insertmacro WriteEnvFiles $APIKey $WhisperModel
     FunctionEnd
-
-    
 
 ;--------------------------------
 ;Descriptions
