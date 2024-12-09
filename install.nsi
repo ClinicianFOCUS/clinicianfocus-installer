@@ -90,6 +90,7 @@
     !insertmacro MUI_PAGE_DIRECTORY
 
     ; Custom pages
+    Page custom ConditionalApiPageCreate ApiPageLeave
     Page custom ConditionalModelPageCreate ModelPageLeave
     Page custom ConditionalWhisperPageCreate WhisperSettingsPageLeave
 
@@ -504,33 +505,18 @@
             Abort
         ${EndIf}
 
-        ; Create a label for the API key input
-        ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
-        ${NSD_CreateText} 0u 14u 100% 12u ""
-        Pop $Input_APIKey
-
-        ; Create a button to generate the API key
-        ${NSD_CreateButton} 0u 28u 50% 12u "Generate API Key"
-        Pop $0
-        ${NSD_OnClick} $0 GenerateAPIKey
-        
-        ; Create description label for API key
-        ${NSD_CreateLabel} 0u 42u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
-        Pop $0
-        SetCtlColors $0 808080 transparent
-
         ; Create a label for the model selection
-        ${NSD_CreateLabel} 0u 58u 100% 12u "Select Whisper Model:"
-        ${NSD_CreateComboBox} 0u 72u 100% 12u ""
+        ${NSD_CreateLabel} 0u 0u 100% 12u "Select Whisper Model:"
+        ${NSD_CreateComboBox} 0u 14u 100% 12u ""
         Pop $DropDown_WhisperModel
 
         ; Create description label for model selection
-        ${NSD_CreateLabel} 0u 86u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
+        ${NSD_CreateLabel} 0u 28u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
         Pop $0
         SetCtlColors $0 808080 transparent
 
         ; Add more detailed model descriptions
-        ${NSD_CreateLabel} 0u 100u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
+        ${NSD_CreateLabel} 0u 42u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
         Pop $0
         SetCtlColors $0 808080 transparent
 
@@ -609,9 +595,6 @@
     !macroend
 
     Function WhisperSettingsPageLeave
-        ; Get the API key entered by the user
-        ${NSD_GetText} $Input_APIKey $APIKey
-
         ; Get the selected Whisper model
         ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  ; $1 will hold the user input
 
@@ -665,6 +648,28 @@
 ;--------------------------------
 ;Conditional Model Selection Page Display
 ; Define the conditional model selection page
+    Function ConditionalApiPageCreate
+        ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+
+        ${If} $0 == "AfterRestart"
+            Abort ; Skip this page
+        ${EndIf}
+
+        SectionGetFlags ${SEC_LLM} $0
+        IntOp $0 $0 & ${SF_SELECTED}
+        
+        SectionGetFlags ${SEC_S2T} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+
+        IntOp $0 $0 | $1
+        ${If} $0 == ${SF_SELECTED}
+            ${If} $Is_Adv_Install == ${BST_CHECKED}
+                Call ApiPageCreate
+                Return
+            ${EndIf}
+        ${EndIf}
+    FunctionEnd
+
     Function ConditionalModelPageCreate
         ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
 
@@ -885,6 +890,40 @@
 
         nsDialogs::Show
 
+    FunctionEnd
+
+;--------------------------------
+;Generate Api Key Page Customization using nsDialogs
+; Define the Api Key page
+    Function ApiPageCreate
+        nsDialogs::Create 1018
+
+        Pop $0
+        ${If} $0 == error
+            Abort
+        ${EndIf}
+
+        ; Create a label for the API key input
+        ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
+        ${NSD_CreateText} 0u 14u 100% 12u ""
+        Pop $Input_APIKey
+
+        ; Create a button to generate the API key
+        ${NSD_CreateButton} 0u 28u 50% 12u "Generate API Key"
+        Pop $0
+        ${NSD_OnClick} $0 GenerateAPIKey
+        
+        ; Create description label for API key
+        ${NSD_CreateLabel} 0u 42u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
+        Pop $0
+        SetCtlColors $0 808080 transparent
+        ; Display the dialog
+        nsDialogs::Show
+    FunctionEnd
+
+    Function ApiPageLeave
+        ; Get the API key entered by the user
+        ${NSD_GetText} $Input_APIKey $APIKey
     FunctionEnd
 
 ;--------------------------------
