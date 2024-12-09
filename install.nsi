@@ -817,10 +817,31 @@
         ; Initialize the vertical position for the first checkbox
         StrCpy $1 0
 
-        ; Create a label for the API key
-        ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
-        Pop $0
-        IntOp $1 $1 + 20 ; Increment the vertical position
+        ${If} $S2THasEnv != 1
+            ${If} $LLMHasEnv != 1
+                ; Create a label for the API key
+                ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
+                Pop $0
+                IntOp $1 $1 + 20 ; Increment the vertical position
+            ${Else}
+                ; Create a label for the API key
+                ${NSD_CreateLabel} 0u $1 100% 12u "API Key (S2T)"
+                Pop $0
+                IntOp $1 $1 + 20 ; Increment the vertical position
+            ${EndIf}
+        ${ElseIf} $LLMHasEnv != 1
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM)"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+        ${Else}
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key not changed for both LLM and S2T"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            StrCpy $APIKey "Not Changed"
+        ${EndIf}
 
         ; Create an Edit control to display the API key
         ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
