@@ -545,11 +545,11 @@
 
     Function HasEnvFiles
         ; Check if the .env files exist
-        IfFileExists "$INSTDIR\speech2text-container\.env" 0 3
+        IfFileExists "$INSTDIR\speech2text-container\.env" 0 +3
             StrCpy $S2THasEnv 1
 
         
-        IfFileExists "$INSTDIR\local-llm-container\.env" 0 3
+        IfFileExists "$INSTDIR\local-llm-container\.env" 0 +3
             StrCpy $LLMHasEnv 1
 
 
@@ -557,7 +557,7 @@
     
 
     !macro WriteEnvFiles APIKey WhisperModel
-        ${If} $S2THasEnv == 1
+        ${If} $S2THasEnv != 1
         ; Create the .env directories for the Whisper settings
             CreateDirectory "$INSTDIR\speech2text-container"
 
@@ -580,7 +580,7 @@
             FileClose $3
         ${EndIf}
 
-        ${If} $LLMHasEnv == 1        
+        ${If} $LLMHasEnv != 1        
             ; Create the .env directories for the Whisper settings
             CreateDirectory "$INSTDIR\local-llm-container"
 
