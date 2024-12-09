@@ -508,24 +508,29 @@
         ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
         ${NSD_CreateText} 0u 14u 100% 12u ""
         Pop $Input_APIKey
+
+        ; Create a button to generate the API key
+        ${NSD_CreateButton} 0u 28u 50% 12u "Generate API Key"
+        Pop $0
+        ${NSD_OnClick} $0 GenerateAPIKey
         
         ; Create description label for API key
-        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
+        ${NSD_CreateLabel} 0u 42u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
         Pop $0
         SetCtlColors $0 808080 transparent
 
         ; Create a label for the model selection
-        ${NSD_CreateLabel} 0u 44u 100% 12u "Select Whisper Model:"
-        ${NSD_CreateComboBox} 0u 58u 100% 12u ""
+        ${NSD_CreateLabel} 0u 58u 100% 12u "Select Whisper Model:"
+        ${NSD_CreateComboBox} 0u 72u 100% 12u ""
         Pop $DropDown_WhisperModel
 
         ; Create description label for model selection
-        ${NSD_CreateLabel} 0u 72u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
+        ${NSD_CreateLabel} 0u 86u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
         Pop $0
         SetCtlColors $0 808080 transparent
 
         ; Add more detailed model descriptions
-        ${NSD_CreateLabel} 0u 86u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
+        ${NSD_CreateLabel} 0u 100u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
         Pop $0
         SetCtlColors $0 808080 transparent
 
@@ -1228,6 +1233,9 @@
             MessageBox MB_OK "Error: Could not generate API key."
             Abort
         ${EndIf}
+
+        ; Set the generated API key in the text box
+        ${NSD_SetText} $Input_APIKey $APIKey
     FunctionEnd
 
     ;------------------------------------------------------------------------------
