@@ -1124,7 +1124,8 @@
         ; Check Speech2Text checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_Speech2Text $0
         StrCmp $0 ${BST_CHECKED} 0 +2
-            Exec 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" build --no-cache && docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d'
+            ExecWait 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" build --no-cache'
+            ExecWait 'docker-compose -f "$INSTDIR\speech2text-container\docker-compose.yml" up -d'
 
         ; Check LLM checkbox state and launch if checked
         ${NSD_GetState} $Checkbox_LLM $0
