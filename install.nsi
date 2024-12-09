@@ -50,6 +50,10 @@
     Var /GLOBAL NVIDIA_RADIO
     Var /GLOBAL SELECTED_ARCH_FREESCRIBE
 
+; Variables indicating the presence of .env files
+    Var S2THasEnv
+    Var LLMHasEnv
+
 ;---------------------------------
 ; constants
     !define MIN_CUDA_DRIVER_VERSION 527.41 ; The nvidia graphic driver that is compatiable with Cuda 12.1
@@ -556,52 +560,64 @@
         nsDialogs::Show
     FunctionEnd
 
-    !macro HasEnvFiles Container
+    Function HasEnvFiles
         ; Check if the .env files exist
-        IfFileExists "$INSTDIR\$Container\.env" EnvFound EnvNotFound
+        IfFileExists "$INSTDIR\speech2text-container\.env" 0 3
+            StrCpy $S2THasEnv 1
 
-        EnvFound:
-            Return 1
-        EnvNotFound:
-            Return 0
-    !macroend
+        
+        IfFileExists "$INSTDIR\local-llm-container\.env" 0 3
+            StrCpy $LLMHasEnv 1
+
+
+    FunctionEnd
     
 
     !macro WriteEnvFiles APIKey WhisperModel
+        ${If} $S2THasEnv == 1
         ; Create the .env directories for the Whisper settings
-        CreateDirectory "$INSTDIR\speech2text-container"
-        CreateDirectory "$INSTDIR\local-llm-container"
+            CreateDirectory "$INSTDIR\speech2text-container"
 
-        ; Define the file path for the Whisper .env settings
-        StrCpy $0 "$INSTDIR\speech2text-container\.env"
-        StrCpy $1 "$INSTDIR\local-llm-container\.env"
+            ; Define the file path for the Whisper .env settings
+            StrCpy $0 "$INSTDIR\speech2text-container\.env"
 
-        ; Open the .env file for writing
-        FileOpen $3 $0 w
-        FileOpen $4 $1 w
+            ; Open the .env file for writing
+            FileOpen $3 $0 w
 
-        ${If} $3 == ""
-            MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
-            Abort
+            ${If} $3 == ""
+                MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
+                Abort
+            ${EndIf}
+
+            ; Write the API key and model selection to the whisper/.env file
+            FileWrite $3 "SESSION_API_KEY=$APIKey$\r$\n"
+            FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
+
+            ; Close the whisper/.env file
+            FileClose $3
         ${EndIf}
 
-        ${If} $4 == ""
-            MessageBox MB_OK "Error: Could not create .env file for LLM settings."
-            Abort
+        ${If} $LLMHasEnv == 1        
+            ; Create the .env directories for the Whisper settings
+            CreateDirectory "$INSTDIR\local-llm-container"
+
+            ; Define the file path for the Whisper .env settings
+            StrCpy $1 "$INSTDIR\local-llm-container\.env"
+
+            ; Open the .env file for writing
+            FileOpen $4 $1 w
+
+            ${If} $4 == ""
+                MessageBox MB_OK "Error: Could not create .env file for LLM settings."
+                Abort
+            ${EndIf}
+
+            ; Write the API key to the LLM/.env file
+            FileWrite $4 "SESSION_API_KEY=$APIKey$\r$\n"
+
+            ; Close the LLM/.env file
+            FileClose $4
         ${EndIf}
-
-        ; Write the API key and model selection to the whisper/.env file
-        FileWrite $3 "SESSION_API_KEY=$APIKey$\r$\n"
-        FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
-
-        ; Write the API key to the LLM/.env file
-        FileWrite $4 "SESSION_API_KEY=$APIKey$\r$\n"
-
-        ; Close the whisper/.env file
-        FileClose $3
-
-        ; Close the LLM/.env file
-        FileClose $4
     !macroend
 
     Function WhisperSettingsPageLeave
@@ -1175,12 +1191,20 @@
             ; Add the required amount for mistral model
             SectionSetSize ${SEC_LLM} 2805000
             
+            Call HasEnvFiles
+            ${If} $S2THasEnv == 1
+                ${AndIf} $LLMHasEnv == 1
+                    Goto End
+            ${EndIf}
             Call GenerateAPIKey
 
             StrCpy $WhisperModel "medium"
 
             ; Call the macro to write the .env files
             !insertmacro WriteEnvFiles $APIKey $WhisperModel
+
+            End:
+
         ${EndIf}
 
         ; If not basic set install size without mistral model
