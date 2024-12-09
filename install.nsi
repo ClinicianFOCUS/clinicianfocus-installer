@@ -1089,7 +1089,9 @@
     ; Function to check if Docker is running and start it if not
     Function CheckAndStartDocker
         ; Check if Docker is running
-        ExecWait 'docker info' $0
+        nsExec::ExecToStack 'docker info'
+        Pop $0
+        Pop $1
         StrCmp $0 0 done
 
         ; If Docker is not running, start Docker Desktop
@@ -1098,7 +1100,9 @@
         Sleep 5000 ; Wait for Docker to start
 
         ; Check again if Docker is running
-        ExecWait 'docker info' $0
+        nsExec::ExecToStack 'docker info'
+        Pop $0
+        Pop $1
         StrCmp $0 0 done
 
         ; If Docker still isn't running, show an error message
