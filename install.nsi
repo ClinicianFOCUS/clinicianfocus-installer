@@ -185,26 +185,9 @@
         Section "Speech2Text-Container Module" SEC_S2T
             CreateDirectory "$INSTDIR\speech2text-container"
             
-            ${If} $Is_Adv_Install == ${BST_CHECKED}
-                ; Save new env stuff to memory
-                FileOpen $4 "$INSTDIR\speech2text-container\.env" r
-                FileSeek $4 0 ; we want to start reading at the 1000th byte
-                FileRead $4 $1 ; we read until the end of line (including carriage return and new line) and save it to $1
-                FileRead $4 $2 ; read 10 characters from the next line
-                FileClose $4 ; and close the file
-            ${EndIf}
-            
             ;; Copy in new files
             SetOutPath "$INSTDIR\speech2text-container"
             File ".\speech2text-container\*.*"
-
-            ${If} $Is_Adv_Install == ${BST_CHECKED}
-                ; Set the new env stuff into env file since it just got replaced
-                FileOpen $4 "$INSTDIR\speech2text-container\.env" w
-                FileWrite $4 $1
-                FileWrite $4 $2
-                FileClose $4
-            ${EndIf}
 
             StrCpy $Speech2Text_Installed 1
         SectionEnd
