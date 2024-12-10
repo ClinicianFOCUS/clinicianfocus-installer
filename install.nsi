@@ -1261,6 +1261,9 @@
 
         ; If not basic set install size without mistral model
         ${If} $Is_Adv_Install == ${BST_CHECKED}
+            ; to make sure that new env files are created in advanced mode
+            StrCpy $S2THasEnv 0
+            StrCpy $LLMHasEnv 0
             SectionSetSize ${SEC_LLM} 43.0
         ${EndIf}
     FunctionEnd
