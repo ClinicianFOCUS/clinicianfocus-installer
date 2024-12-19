@@ -841,12 +841,10 @@
 
             ; Check if the line contains the API key
             StrCpy $4 $3 15
-            MessageBox MB_OK $4
             ${If} $4 == "SESSION_API_KEY"
                 ; Extract the API key value
                 StrCpy $APIKey2 $3 "" 16
                 StrCpy $APIKey2 $APIKey2 -2 ; Remove the trailing newline characters
-                MessageBox MB_OK $APIKey2
                 Goto done
             ${EndIf}
             Goto loop
