@@ -33,6 +33,7 @@
     Var DropDown_WhisperModel
 
     Var APIKey
+    Var APIKey2
     Var WhisperModel
 
     Var Checkbox_BasicInstall
@@ -536,11 +537,11 @@
 
     Function HasEnvFiles
         ; Check if the .env files exist
-        IfFileExists "$INSTDIR\speech2text-container\.env" 0 +3
+        IfFileExists "$INSTDIR\speech2text-container\.env" 0 +2
             StrCpy $S2THasEnv 1
 
         
-        IfFileExists "$INSTDIR\local-llm-container\.env" 0 +3
+        IfFileExists "$INSTDIR\local-llm-container\.env" 0 +2
             StrCpy $LLMHasEnv 1
 
 
@@ -814,6 +815,49 @@
         ${EndIf}
     FunctionEnd
 
+    Function ReadEnvFile
+        Exch $0 ; File path
+        Push $2
+        Push $3
+        Push $4
+
+        ; Open the .env file
+        FileOpen $2 $0 r
+        ${If} $2 == ""
+            MessageBox MB_OK "Error: Could not open .env file."
+            Pop $4
+            Pop $3
+            Pop $2
+            Exch $0
+            Abort
+        ${EndIf}
+
+        ; Read the file line by line
+        loop:
+            FileRead $2 $3
+            ${If} $3 == ""
+                Goto done
+            ${EndIf}
+
+            ; Check if the line contains the API key
+            StrCpy $4 $3 15
+            MessageBox MB_OK $4
+            ${If} $4 == "SESSION_API_KEY"
+                ; Extract the API key value
+                StrCpy $APIKey2 $3 "" 16
+                StrCpy $APIKey2 $APIKey2 -2 ; Remove the trailing newline characters
+                MessageBox MB_OK $APIKey2
+                Goto done
+            ${EndIf}
+            Goto loop
+
+        done:
+            FileClose $2
+            Pop $4
+            Pop $3
+            Exch $0
+    FunctionEnd
+
     ; Function to create the API Info page
     Function CreateAPIInfoPage
         call GetPrimaryIPAddress
@@ -833,29 +877,74 @@
                 ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
                 Pop $0
                 IntOp $1 $1 + 20 ; Increment the vertical position
+
+                ; Create an Edit control to display the API key
+                ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+                Pop $0
             ${Else}
+                ; Create a label for the API key
+                ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM) (not changed)"
+                Pop $0
+                IntOp $1 $1 + 20 ; Increment the vertical position
+
+                ; Read the API key from the .env file
+                Push "$INSTDIR\local-llm-container\.env"
+                Call ReadEnvFile
+                
+                ; Create an Edit control to display the API key
+                ${NSD_CreateText} 0u $1 100% 12u "$APIKey2"
+                Pop $0
+                SendMessage $0 ${EM_SETREADONLY} 1 0
+                IntOp $1 $1 + 25 ;Increment the vertical position
+
                 ; Create a label for the API key
                 ${NSD_CreateLabel} 0u $1 100% 12u "API Key (S2T)"
                 Pop $0
                 IntOp $1 $1 + 20 ; Increment the vertical position
+
+                ; Create an Edit control to display the API key
+                ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+                Pop $0
             ${EndIf}
         ${ElseIf} $LLMHasEnv != 1
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key (S2T) (not changed)"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Read the API key from the .env file
+            Push "$INSTDIR\speech2text-container\.env"
+            Call ReadEnvFile
+            
+            ; Create an Edit control to display the API key
+            ${NSD_CreateText} 0u $1 100% 12u "$APIKey2"
+            Pop $0
+            SendMessage $0 ${EM_SETREADONLY} 1 0
+            IntOp $1 $1 + 25 ;Increment the vertical position
+
             ; Create a label for the API key
             ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM)"
             Pop $0
             IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Create an Edit control to display the API key
+            ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+            Pop $0
         ${Else}
             ; Create a label for the API key
-            ${NSD_CreateLabel} 0u $1 100% 12u "API Key not changed for both LLM and S2T"
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key for both LLM and S2T (not changed)"
             Pop $0
             IntOp $1 $1 + 20 ; Increment the vertical position
 
-            StrCpy $APIKey "Not Changed"
+            ; Read the API key from the .env file
+            Push "$INSTDIR\local-llm-container\.env"
+            Call ReadEnvFile
+            
+            ; Create an Edit control to display the API key
+            ${NSD_CreateText} 0u $1 100% 12u "$APIKey2"
+            Pop $0
         ${EndIf}
 
-        ; Create an Edit control to display the API key
-        ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
-        Pop $0
         ; Make the text box read-only
         SendMessage $0 ${EM_SETREADONLY} 1 0
         IntOp $1 $1 + 25 ; Increment the vertical position
