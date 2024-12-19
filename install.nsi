@@ -247,8 +247,17 @@
             StrCpy $Docker_Installed_NotificationDone 1
             Exec "$PROGRAMFILES64/Docker/Docker/Docker Desktop.exe"
 
+            ClearErrors
             WriteRegStr HKCU "${MARKER_REG_KEY}" "Step" "AfterRestart"
+            IfErrors 0 +3
+                MessageBox MB_OK|MB_ICONSTOP "Failed to write installation state to registry. Installation may be incomplete."
+                Abort "Registry write failed"
+
+            ClearErrors
             WriteRegStr HKCU "${MARKER_REG_KEY}" "InstallPath" "$INSTDIR"
+            IfErrors 0 +3
+                MessageBox MB_OK|MB_ICONSTOP "Failed to write installation path to registry. Installation may be incomplete."
+                Abort "Registry write failed"
 
             ; Add message box with instructions and restart option
             MessageBox MB_YESNO "Docker Desktop has been installed. Please restart your computer then restart the clincian focus toolbox installer." IDYES RestartNow IDNO ContinueInstall
