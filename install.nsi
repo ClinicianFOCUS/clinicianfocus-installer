@@ -50,6 +50,10 @@
     Var /GLOBAL NVIDIA_RADIO
     Var /GLOBAL SELECTED_ARCH_FREESCRIBE
 
+; Variables indicating the presence of .env files
+    Var S2THasEnv
+    Var LLMHasEnv
+
 ;---------------------------------
 ; constants
     !define MIN_CUDA_DRIVER_VERSION 527.41 ; The nvidia graphic driver that is compatiable with Cuda 12.1
@@ -86,6 +90,7 @@
     !insertmacro MUI_PAGE_DIRECTORY
 
     ; Custom pages
+    Page custom ConditionalApiPageCreate ApiPageLeave
     Page custom ConditionalModelPageCreate ModelPageLeave
     Page custom ConditionalWhisperPageCreate WhisperSettingsPageLeave
 
@@ -181,26 +186,9 @@
         Section "Speech2Text-Container Module" SEC_S2T
             CreateDirectory "$INSTDIR\speech2text-container"
             
-            ${If} $Is_Adv_Install == ${BST_CHECKED}
-                ; Save new env stuff to memory
-                FileOpen $4 "$INSTDIR\speech2text-container\.env" r
-                FileSeek $4 0 ; we want to start reading at the 1000th byte
-                FileRead $4 $1 ; we read until the end of line (including carriage return and new line) and save it to $1
-                FileRead $4 $2 ; read 10 characters from the next line
-                FileClose $4 ; and close the file
-            ${EndIf}
-            
             ;; Copy in new files
             SetOutPath "$INSTDIR\speech2text-container"
             File ".\speech2text-container\*.*"
-
-            ${If} $Is_Adv_Install == ${BST_CHECKED}
-                ; Set the new env stuff into env file since it just got replaced
-                FileOpen $4 "$INSTDIR\speech2text-container\.env" w
-                FileWrite $4 $1
-                FileWrite $4 $2
-                FileClose $4
-            ${EndIf}
 
             StrCpy $Speech2Text_Installed 1
         SectionEnd
@@ -514,28 +502,18 @@
             Abort
         ${EndIf}
 
-        ; Create a label for the API key input
-        ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
-        ${NSD_CreateText} 0u 14u 100% 12u ""
-        Pop $Input_APIKey
-        
-        ; Create description label for API key
-        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
-        Pop $0
-        SetCtlColors $0 808080 transparent
-
         ; Create a label for the model selection
-        ${NSD_CreateLabel} 0u 44u 100% 12u "Select Whisper Model:"
-        ${NSD_CreateComboBox} 0u 58u 100% 12u ""
+        ${NSD_CreateLabel} 0u 0u 100% 12u "Select Whisper Model:"
+        ${NSD_CreateComboBox} 0u 14u 100% 12u ""
         Pop $DropDown_WhisperModel
 
         ; Create description label for model selection
-        ${NSD_CreateLabel} 0u 72u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
+        ${NSD_CreateLabel} 0u 28u 100% 12u "Choose model size (larger models are more accurate but slower) - 'medium' recommended"
         Pop $0
         SetCtlColors $0 808080 transparent
 
         ; Add more detailed model descriptions
-        ${NSD_CreateLabel} 0u 86u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
+        ${NSD_CreateLabel} 0u 42u 100% 48u "tiny: Fastest, least accurate (1GB)$\nbase: Fast, basic accuracy (1GB)$\nsmall: Balanced speed/accuracy (2GB)$\nmedium: Good accuracy (5GB)$\nlarge: Best accuracy, slowest (10GB)"
         Pop $0
         SetCtlColors $0 808080 transparent
 
@@ -553,55 +531,73 @@
         nsDialogs::Show
     FunctionEnd
 
+    Function HasEnvFiles
+        ; Check if the .env files exist
+        IfFileExists "$INSTDIR\speech2text-container\.env" 0 +3
+            StrCpy $S2THasEnv 1
+
+        
+        IfFileExists "$INSTDIR\local-llm-container\.env" 0 +3
+            StrCpy $LLMHasEnv 1
+
+
+    FunctionEnd
+    
+
     !macro WriteEnvFiles APIKey WhisperModel
+        ${If} $S2THasEnv != 1
         ; Create the .env directories for the Whisper settings
-        CreateDirectory "$INSTDIR\speech2text-container"
-        CreateDirectory "$INSTDIR\local-llm-container"
+            CreateDirectory "$INSTDIR\speech2text-container"
 
-        ; Define the file path for the Whisper .env settings
-        StrCpy $0 "$INSTDIR\speech2text-container\.env"
-        StrCpy $1 "$INSTDIR\local-llm-container\.env"
+            ; Define the file path for the Whisper .env settings
+            StrCpy $0 "$INSTDIR\speech2text-container\.env"
 
-        ; Open the .env file for writing
-        FileOpen $3 $0 w
-        FileOpen $4 $1 w
+            ; Open the .env file for writing
+            FileOpen $3 $0 w
 
-        ${If} $3 == ""
-            MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
-            Abort
+            ${If} $3 == ""
+                MessageBox MB_OK "Error: Could not create .env file for Whisper settings."
+                Abort
+            ${EndIf}
+
+            ; Write the API key and model selection to the whisper/.env file
+            FileWrite $3 "SESSION_API_KEY=$APIKey$\r$\n"
+            FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
+
+            ; Close the whisper/.env file
+            FileClose $3
         ${EndIf}
 
-        ${If} $4 == ""
-            MessageBox MB_OK "Error: Could not create .env file for LLM settings."
-            Abort
+        ${If} $LLMHasEnv != 1        
+            ; Create the .env directories for the Whisper settings
+            CreateDirectory "$INSTDIR\local-llm-container"
+
+            ; Define the file path for the Whisper .env settings
+            StrCpy $1 "$INSTDIR\local-llm-container\.env"
+
+            ; Open the .env file for writing
+            FileOpen $4 $1 w
+
+            ${If} $4 == ""
+                MessageBox MB_OK "Error: Could not create .env file for LLM settings."
+                Abort
+            ${EndIf}
+
+            ; Write the API key to the LLM/.env file
+            FileWrite $4 "SESSION_API_KEY=$APIKey$\r$\n"
+
+            ; Close the LLM/.env file
+            FileClose $4
         ${EndIf}
-
-        ; Write the API key and model selection to the whisper/.env file
-        FileWrite $3 "SESSION_API_KEY=$APIKey$\r$\n"
-        FileWrite $3 "WHISPER_MODEL=$WhisperModel$\r$\n"
-
-        ; Write the API key to the LLM/.env file
-        FileWrite $4 "SESSION_API_KEY=$APIKey$\r$\n"
-
-        ; Close the whisper/.env file
-        FileClose $3
-
-        ; Close the LLM/.env file
-        FileClose $4
     !macroend
 
     Function WhisperSettingsPageLeave
-        ; Get the API key entered by the user
-        ${NSD_GetText} $Input_APIKey $APIKey
-
         ; Get the selected Whisper model
         ${NSD_GetText} $DropDown_WhisperModel $WhisperModel  ; $1 will hold the user input
 
         ; Call the macro to write the .env files
         !insertmacro WriteEnvFiles $APIKey $WhisperModel
     FunctionEnd
-
-    
 
 ;--------------------------------
 ;Descriptions
@@ -649,6 +645,28 @@
 ;--------------------------------
 ;Conditional Model Selection Page Display
 ; Define the conditional model selection page
+    Function ConditionalApiPageCreate
+        ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
+
+        ${If} $0 == "AfterRestart"
+            Abort ; Skip this page
+        ${EndIf}
+
+        SectionGetFlags ${SEC_LLM} $0
+        IntOp $0 $0 & ${SF_SELECTED}
+        
+        SectionGetFlags ${SEC_S2T} $1
+        IntOp $1 $1 & ${SF_SELECTED}
+
+        IntOp $0 $0 | $1
+        ${If} $0 == ${SF_SELECTED}
+            ${If} $Is_Adv_Install == ${BST_CHECKED}
+                Call ApiPageCreate
+                Return
+            ${EndIf}
+        ${EndIf}
+    FunctionEnd
+
     Function ConditionalModelPageCreate
         ReadRegStr $0 HKCU "${MARKER_REG_KEY}" "Step"
 
@@ -803,10 +821,31 @@
         ; Initialize the vertical position for the first checkbox
         StrCpy $1 0
 
-        ; Create a label for the API key
-        ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
-        Pop $0
-        IntOp $1 $1 + 20 ; Increment the vertical position
+        ${If} $S2THasEnv != 1
+            ${If} $LLMHasEnv != 1
+                ; Create a label for the API key
+                ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
+                Pop $0
+                IntOp $1 $1 + 20 ; Increment the vertical position
+            ${Else}
+                ; Create a label for the API key
+                ${NSD_CreateLabel} 0u $1 100% 12u "API Key (S2T)"
+                Pop $0
+                IntOp $1 $1 + 20 ; Increment the vertical position
+            ${EndIf}
+        ${ElseIf} $LLMHasEnv != 1
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM)"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+        ${Else}
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key not changed for both LLM and S2T"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            StrCpy $APIKey "Not Changed"
+        ${EndIf}
 
         ; Create an Edit control to display the API key
         ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
@@ -845,6 +884,40 @@
 
         nsDialogs::Show
 
+    FunctionEnd
+
+;--------------------------------
+;Generate Api Key Page Customization using nsDialogs
+; Define the Api Key page
+    Function ApiPageCreate
+        nsDialogs::Create 1018
+
+        Pop $0
+        ${If} $0 == error
+            Abort
+        ${EndIf}
+
+        ; Create a label for the API key input
+        ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
+        ${NSD_CreateText} 0u 14u 100% 12u ""
+        Pop $Input_APIKey
+
+        ; Create a button to generate the API key
+        ${NSD_CreateButton} 0u 28u 50% 12u "Generate API Key"
+        Pop $0
+        ${NSD_OnClick} $0 GenerateAPIKey
+        
+        ; Create description label for API key
+        ${NSD_CreateLabel} 0u 42u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
+        Pop $0
+        SetCtlColors $0 808080 transparent
+        ; Display the dialog
+        nsDialogs::Show
+    FunctionEnd
+
+    Function ApiPageLeave
+        ; Get the API key entered by the user
+        ${NSD_GetText} $Input_APIKey $APIKey
     FunctionEnd
 
 ;--------------------------------
@@ -1010,7 +1083,9 @@
     ; Function to check if Docker is running and start it if not
     Function CheckAndStartDocker
         ; Check if Docker is running
-        ExecWait 'docker info' $0
+        nsExec::ExecToStack 'docker info'
+        Pop $0
+        Pop $1
         StrCmp $0 0 done
 
         ; If Docker is not running, start Docker Desktop
@@ -1019,7 +1094,9 @@
         Sleep 5000 ; Wait for Docker to start
 
         ; Check again if Docker is running
-        ExecWait 'docker info' $0
+        nsExec::ExecToStack 'docker info'
+        Pop $0
+        Pop $1
         StrCmp $0 0 done
 
         ; If Docker still isn't running, show an error message
@@ -1160,16 +1237,27 @@
             ; Add the required amount for mistral model
             SectionSetSize ${SEC_LLM} 2805000
             
+            Call HasEnvFiles
+            ${If} $S2THasEnv == 1
+                ${AndIf} $LLMHasEnv == 1
+                    Goto End
+            ${EndIf}
             Call GenerateAPIKey
 
             StrCpy $WhisperModel "medium"
 
             ; Call the macro to write the .env files
             !insertmacro WriteEnvFiles $APIKey $WhisperModel
+
+            End:
+
         ${EndIf}
 
         ; If not basic set install size without mistral model
         ${If} $Is_Adv_Install == ${BST_CHECKED}
+            ; to make sure that new env files are created in advanced mode
+            StrCpy $S2THasEnv 0
+            StrCpy $LLMHasEnv 0
             SectionSetSize ${SEC_LLM} 43.0
         ${EndIf}
     FunctionEnd
@@ -1185,6 +1273,9 @@
             MessageBox MB_OK "Error: Could not generate API key."
             Abort
         ${EndIf}
+
+        ; Set the generated API key in the text box
+        ${NSD_SetText} $Input_APIKey $APIKey
     FunctionEnd
 
     ;------------------------------------------------------------------------------
