@@ -1270,8 +1270,15 @@
 
     ; Function to generate API key
     Function GenerateAPIKey
+        ; Create a temporary PowerShell script to generate a random API key
+        FileOpen $0 "$TEMP\randomApi.ps1" w
+        FileWrite $0 "$$words = @('apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'kiwi', 'lemon', 'mango', 'nectarine', 'orange', 'papaya', 'quince', 'raspberry', 'strawberry', 'tangerine', 'ugli', 'vanilla', 'watermelon', 'xigua', 'yellowfruit', 'zucchini')$\r$\n"
+        FileWrite $0 "$$randomWords = ($$words | Get-Random -Count 6) -join '-';$\r$\n"
+        FileWrite $0 "$$randomWords$\r$\n"
+        FileClose $0
+        
         ; Generate a random API key
-        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
+        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\randomApi.ps1"' 
         Pop $0
         Pop $APIKey
 
@@ -1282,6 +1289,9 @@
 
         ; Set the generated API key in the text box
         ${NSD_SetText} $Input_APIKey $APIKey
+        
+        ; Clean up the PowerShell script
+        Delete "$TEMP\randomApi.ps1"
     FunctionEnd
 
     ;------------------------------------------------------------------------------
