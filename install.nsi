@@ -815,6 +815,14 @@
         ${EndIf}
     FunctionEnd
 
+    ;------------------------------------------------------------------------------
+    ; Function: ReadEnvFile
+    ; Purpose: Read the API key from the .env file
+    ; 
+    ; Parameters:
+    ;   Stack 0 : File path to the .env file
+    ;
+    ;------------------------------------------------------------------------------
     Function ReadEnvFile
         Exch $0 ; File path
         Push $2
