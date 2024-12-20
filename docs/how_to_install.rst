@@ -107,7 +107,7 @@ After restarting your computer, follow these steps to complete the setup:
 
 5. **Verify Installation**
 
-      Verify that all installed components are running correctly. Ensure Docker Desktop is running and the necessary containers are active. If error occurs you will encounter installation errors.
+    Ensure Docker Desktop is running and the necessary containers are active.
 
 Advanced Settings
 -----------------
