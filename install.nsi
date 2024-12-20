@@ -21,7 +21,7 @@
     Var FreeScribe_Installed
 
     Var DropDown_Model
-    Var Input_HFToken
+    ; Var Input_HFToken
 
     Var Docker_Installed
     Var WSL_Installed
@@ -908,16 +908,16 @@
 
         ; Create a label for the API key input
         ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
-        ${NSD_CreateText} 0u 14u 100% 12u ""
+        ${NSD_CreateText} 0u 14u 65% 12u ""
         Pop $Input_APIKey
 
         ; Create a button to generate the API key
-        ${NSD_CreateButton} 0u 28u 50% 12u "Generate API Key"
+        ${NSD_CreateButton} 68% 14u 32% 12u "Generate API Key"
         Pop $0
         ${NSD_OnClick} $0 GenerateAPIKey
         
         ; Create description label for API key
-        ${NSD_CreateLabel} 0u 42u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
+        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
         Pop $0
         SetCtlColors $0 808080 transparent
         ; Display the dialog
@@ -970,16 +970,16 @@
         ${NSD_CB_AddString} $DropDown_Model "Custom"
         ${NSD_CB_SelectString} $DropDown_Model "gemma2:2b-instruct-q8_0"
 
-        ; Create input for Huggingface Token
-        ${NSD_CreateLabel} 0u 44u 100% 12u "Huggingface Token:"
-        Pop $0
-        ${NSD_CreateText} 0u 58u 100% 12u ""
-        Pop $Input_HFToken
+        ; ; Create input for Huggingface Token
+        ; ${NSD_CreateLabel} 0u 44u 100% 12u "Huggingface Token:"
+        ; Pop $0
+        ; ${NSD_CreateText} 0u 58u 100% 12u ""
+        ; Pop $Input_HFToken
         
-        ; Create description label for Huggingface token
-        ${NSD_CreateLabel} 0u 72u 100% 12u "Enter your Huggingface API token if referencing a gated model on Huggingface"
-        Pop $0
-        SetCtlColors $0 808080 transparent
+        ; ; Create description label for Huggingface token
+        ; ${NSD_CreateLabel} 0u 72u 100% 12u "Enter your Huggingface API token if referencing a gated model on Huggingface"
+        ; Pop $0
+        ; SetCtlColors $0 808080 transparent
 
         ; Add event handler for dropdown changes
         ${NSD_OnChange} $DropDown_Model ModelSelectionChanged
@@ -1010,8 +1010,8 @@
         StrCmp $1 "Custom" 0 +2
         ${NSD_GetText} $Input_CustomModel $1
         
-        ; Get the Huggingface token
-        ${NSD_GetText} $Input_HFToken $2
+        ; ; Get the Huggingface token
+        ; ${NSD_GetText} $Input_HFToken $2
 
         ; Create the .env directories for the Local LLM container
         CreateDirectory "$INSTDIR"

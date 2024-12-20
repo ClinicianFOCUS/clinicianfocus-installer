@@ -1,5 +1,7 @@
 .aider*
 freescribe
 local-llm-container
-speech2text-container
 clinicianfocus_toolbox-installer.exe
+_build
+speech2text-container
+*.exe
