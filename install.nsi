@@ -21,7 +21,7 @@
     Var FreeScribe_Installed
 
     Var DropDown_Model
-    Var Input_HFToken
+    ; Var Input_HFToken
 
     Var Docker_Installed
     Var WSL_Installed
@@ -970,16 +970,16 @@
         ${NSD_CB_AddString} $DropDown_Model "Custom"
         ${NSD_CB_SelectString} $DropDown_Model "gemma2:2b-instruct-q8_0"
 
-        ; Create input for Huggingface Token
-        ${NSD_CreateLabel} 0u 44u 100% 12u "Huggingface Token:"
-        Pop $0
-        ${NSD_CreateText} 0u 58u 100% 12u ""
-        Pop $Input_HFToken
+        ; ; Create input for Huggingface Token
+        ; ${NSD_CreateLabel} 0u 44u 100% 12u "Huggingface Token:"
+        ; Pop $0
+        ; ${NSD_CreateText} 0u 58u 100% 12u ""
+        ; Pop $Input_HFToken
         
-        ; Create description label for Huggingface token
-        ${NSD_CreateLabel} 0u 72u 100% 12u "Enter your Huggingface API token if referencing a gated model on Huggingface"
-        Pop $0
-        SetCtlColors $0 808080 transparent
+        ; ; Create description label for Huggingface token
+        ; ${NSD_CreateLabel} 0u 72u 100% 12u "Enter your Huggingface API token if referencing a gated model on Huggingface"
+        ; Pop $0
+        ; SetCtlColors $0 808080 transparent
 
         ; Add event handler for dropdown changes
         ${NSD_OnChange} $DropDown_Model ModelSelectionChanged
@@ -1010,8 +1010,8 @@
         StrCmp $1 "Custom" 0 +2
         ${NSD_GetText} $Input_CustomModel $1
         
-        ; Get the Huggingface token
-        ${NSD_GetText} $Input_HFToken $2
+        ; ; Get the Huggingface token
+        ; ${NSD_GetText} $Input_HFToken $2
 
         ; Create the .env directories for the Local LLM container
         CreateDirectory "$INSTDIR"
