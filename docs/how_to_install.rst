@@ -138,11 +138,8 @@ Model Selection
 **Options:**
 
 - **Pre-configured Models:**
-  - ``gemma2: b-instruct-q8_0``: A recommended pre-configured model optimized for general use cases.
-- **Custom:** Select this option if you have a specific model to configure.
-
-**Huggingface Token:**
-    If using a gated model from `Hugging Face <https://huggingface.co/>`_, you must enter your Hugging Face API token to access it.
+  - ``gemma2:2b-instruct-q8_0``: A recommended pre-configured model optimized for general use cases.
+- **Custom:** Select this option if you have a specific model to configure. List can be found `here <https://ollama.com/library>`_ (`https://ollama.com/library <https://ollama.com/library>`_).
 
 **Note:**
     Ensure that the model selected aligns with your use case and computational resources.
