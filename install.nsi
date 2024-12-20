@@ -908,16 +908,16 @@
 
         ; Create a label for the API key input
         ${NSD_CreateLabel} 0u 0u 100% 12u "Password (API Key):"
-        ${NSD_CreateText} 0u 14u 100% 12u ""
+        ${NSD_CreateText} 0u 14u 65% 12u ""
         Pop $Input_APIKey
 
         ; Create a button to generate the API key
-        ${NSD_CreateButton} 0u 28u 50% 12u "Generate API Key"
+        ${NSD_CreateButton} 68% 14u 32% 12u "Generate API Key"
         Pop $0
         ${NSD_OnClick} $0 GenerateAPIKey
         
         ; Create description label for API key
-        ${NSD_CreateLabel} 0u 42u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
+        ${NSD_CreateLabel} 0u 28u 100% 12u "This will be your password (API key) used to access the Whisper and LLM services"
         Pop $0
         SetCtlColors $0 808080 transparent
         ; Display the dialog
