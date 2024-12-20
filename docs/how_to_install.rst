@@ -173,4 +173,4 @@ Additional Notes
 ^^^^^^^^^^^^^^^^
 
 - The installation requires sufficient disk space for the selected models.
-- Ensure internet connectivity for downloading model.
+- Ensure internet connectivity for downloading the model.
