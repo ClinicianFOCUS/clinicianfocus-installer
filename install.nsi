@@ -542,11 +542,11 @@
 
     Function HasEnvFiles
         ; Check if the .env files exist
-        IfFileExists "$INSTDIR\speech2text-container\.env" 0 +3
+        IfFileExists "$INSTDIR\speech2text-container\.env" 0 +2
             StrCpy $S2THasEnv 1
 
         
-        IfFileExists "$INSTDIR\local-llm-container\.env" 0 +3
+        IfFileExists "$INSTDIR\local-llm-container\.env" 0 +2
             StrCpy $LLMHasEnv 1
 
 
