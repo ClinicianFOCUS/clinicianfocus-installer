@@ -54,6 +54,13 @@
     Var S2THasEnv
     Var LLMHasEnv
 
+; Variables controlling kill running instance before installation
+    Var /GLOBAL Got_Running_Instance
+    Var RunningInstanceDialog
+    Var ForceStopButton
+    Var RetryButton
+    Var StatusLabel
+
 ;---------------------------------
 ; constants
     !define MIN_CUDA_DRIVER_VERSION 527.41 ; The nvidia graphic driver that is compatiable with Cuda 12.1
@@ -71,9 +78,153 @@
 
     !define MUI_ABORTWARNING
 
+!macro CheckRunningInstanceMacro
+    nsExec::ExecToStack 'cmd /c tasklist /FI "IMAGENAME eq freescribe-client.exe" /NH | find /I "freescribe-client.exe" > nul'
+    Pop $0 ; Return value
+    ${If} $0 == 0
+        StrCpy $Got_Running_Instance "1"
+    ${Else}
+        StrCpy $Got_Running_Instance "0"
+    ${EndIf}
+!macroend
+
+!macro HideNextButtonMacro
+    GetDlgItem $R0 $HWNDPARENT 1 ; Get the handle of the "Next" button
+    ShowWindow $R0 ${SW_HIDE}    ; Hide the "Next" button
+!macroend
+
+!macro ShowNextButtonMacro
+    GetDlgItem $R0 $HWNDPARENT 1 ; Get the handle of the "Next" button
+    ShowWindow $R0 ${SW_SHOW}    ; Show the "Next" button
+!macroend
+
+!macro GotoNextPageMacro
+    GetDlgItem $1 $HWNDPARENT 1 ; Get the "Next" button handle
+    SendMessage $HWNDPARENT ${WM_COMMAND} 1 $1 ; Simulate clicking the "Next" button
+!macroend
+
+!macro HideBackButtonMacro
+    GetDlgItem $R0 $HWNDPARENT 3 ; Get the handle of the "Back" button
+    ShowWindow $R0 ${SW_HIDE}    ; Hide the "Back" button
+!macroend
+
+Function HideNextButton
+    !insertmacro HideNextButtonMacro
+FunctionEnd
+
+Function ShowNextButton
+    !insertmacro ShowNextButtonMacro
+FunctionEnd
+
+Function GotoNextPage
+    !insertmacro GotoNextPageMacro
+FunctionEnd
+
+Function HideBackButton
+    !insertmacro HideBackButtonMacro
+FunctionEnd
+
+!macro KillFreeScribeProcessMacro
+    nsExec::ExecToStack 'taskkill /F /IM freescribe-client.exe'
+    Pop $0 ; Return value
+
+    ${If} $0 == 0
+        MessageBox MB_OK "FreeScribe process has been terminated."
+        Return
+    ${Else}
+        MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to terminate FreeScribe process. Please close it manually."
+        Return
+    ${EndIf}
+!macroend
+
+Function KillFreeScribeProcess
+    !insertmacro KillFreeScribeProcessMacro
+FunctionEnd
+
+PageEx custom
+    PageCallbacks CreateRunningInstancePagePre
+PageExEnd
+
+Function CreateRunningInstancePage
+    ; Skip this page in silent mode
+    IfSilent 0 +2
+    Abort
+
+    ${If} $Got_Running_Instance == "0"
+        Abort
+    ${EndIf}
+    !insertmacro MUI_HEADER_TEXT "Running Instance Detected" ""
+
+    nsDialogs::Create 1018
+    Pop $RunningInstanceDialog
+
+    ${If} $RunningInstanceDialog == error
+        Abort
+    ${EndIf}
+
+    ; Create status label
+    ${NSD_CreateLabel} 0 10u 100% 24u "FreeScribe is currently running.$\n$\nPlease choose how to proceed: Force Stop or close it manually and Retry"
+    Pop $StatusLabel
+
+    ; Create Force Stop button
+    ${NSD_CreateButton} 10% 50u 30% 12u "Force Stop"
+    Pop $ForceStopButton
+    ${NSD_OnClick} $ForceStopButton OnForceStopClick
+
+    ; Create Retry button
+    ${NSD_CreateButton} 45% 50u 30% 12u "Retry"
+    Pop $RetryButton
+    ${NSD_OnClick} $RetryButton OnRetryClick
+
+    ${If} $Got_Running_Instance == "1"
+        Call HideNextButton
+    ${Else}
+        Call ShowNextButton
+    ${EndIf}
+    Call HideBackButton
+
+    nsDialogs::Show
+FunctionEnd
+
+Function CreateRunningInstancePagePre
+    ${If} $Got_Running_Instance == "0"
+        Abort
+    ${EndIf}
+FunctionEnd
+
+Function OnForceStopClick
+    Call KillFreeScribeProcess
+    nsExec::ExecToStack 'cmd /c tasklist /FI "IMAGENAME eq freescribe-client.exe" /NH | find /I "freescribe-client.exe" > nul'
+    Pop $0
+
+    ${If} $0 == 0
+        ${NSD_SetText} $StatusLabel "Unable to terminate FreeScribe.$\nPlease close it manually and click Retry."
+    ${Else}
+        StrCpy $Got_Running_Instance "0"
+        Call ShowNextButton
+        Call GotoNextPage
+        Abort ; Close the dialog and continue installation
+    ${EndIf}
+FunctionEnd
+
+Function OnRetryClick
+    nsExec::ExecToStack 'cmd /c tasklist /FI "IMAGENAME eq freescribe-client.exe" /NH | find /I "freescribe-client.exe" > nul'
+    Pop $0
+
+    ${If} $0 == 0
+        ${NSD_SetText} $StatusLabel "FreeScribe is still running.$\n$\nPlease choose how to proceed: Force Stop or close it manually and Retry"
+    ${Else}
+        StrCpy $Got_Running_Instance "0"
+        Call ShowNextButton
+        Call GotoNextPage
+        Abort ; Close the dialog and continue installation
+    ${EndIf}
+FunctionEnd
+
 ;--------------------------------
 ;Pages
 ; define installer pages
+    Page custom CreateRunningInstancePage
     !insertmacro MUI_PAGE_LICENSE ".\assets\License.txt"
     Page custom InstallModePageCreate InstallModePageLeave
 
@@ -431,6 +582,8 @@
 ;--------------------------------
 ; On installer start
     Function .onInit
+        !insertmacro CheckRunningInstanceMacro
+
         StrCpy $ShowComponents 1 ; 1 = show, 0 = hide
         StrCpy $ShowDirectory 1  ; 1 = show, 0 = hide
 
