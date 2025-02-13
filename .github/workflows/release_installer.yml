@@ -5,6 +5,7 @@ on:
     tags:
       - "v*.*.*"
       - "v*.*.*.alpha"
+      - "v*.*.*-RC*"
 
 jobs:
   build-windows-installer:
@@ -54,10 +55,10 @@ jobs:
         with:
           additional-plugin-paths: "nsis-plugins"
 
-      - name: Check if alpha release
+      - name: Check if alpha or RC release
         id: check_alpha
         run: |
-          if ("${{ github.ref }}" -like "*.alpha") {
+          if ("${{ github.ref }}" -like "*.alpha" -or "${{ github.ref }}" -like "*-RC*") {
             echo "is_alpha=true" >> $env:GITHUB_OUTPUT
           } else {
             echo "is_alpha=false" >> $env:GITHUB_OUTPUT
