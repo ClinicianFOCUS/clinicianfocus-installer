@@ -1431,6 +1431,11 @@ FunctionEnd
         Pop $0
         Pop $APIKey
 
+        ; Trim the trailing newlines from the API key
+        Push $APIKey
+        Call TrimTrailingNewlines
+        Pop $APIKey
+
         ${If} $0 != 0
             MessageBox MB_OK "Error: Could not generate API key."
             Abort
