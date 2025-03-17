@@ -301,7 +301,7 @@ FunctionEnd
             CreateDirectory "$INSTDIR\local-llm-container"
             CreateDirectory "$INSTDIR\local-llm-container\models"
             SetOutPath "$INSTDIR\local-llm-container"
-            File ".\local-llm-container\*.*"
+            ; File ".\local-llm-container\*.*"
             StrCpy $LLM_Installed 1              
         SectionEnd
 
@@ -339,7 +339,7 @@ FunctionEnd
             
             ;; Copy in new files
             SetOutPath "$INSTDIR\speech2text-container"
-            File ".\speech2text-container\*.*"
+            ; File ".\speech2text-container\*.*"
 
             StrCpy $Speech2Text_Installed 1
         SectionEnd
@@ -374,7 +374,7 @@ FunctionEnd
         ; Create directories for Freescribe Client
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
-        File ".\freescribe\FreeScribeInstaller_windows.exe"
+        ; File ".\freescribe\FreeScribeInstaller_windows.exe"
 
         ; Execute Freescribe installer silently
         ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /ARCH=$SELECTED_ARCH_FREESCRIBE'
@@ -957,12 +957,53 @@ FunctionEnd
         ${EndIf}
     FunctionEnd
 
+    Function TrimTrailingNewlines
+        ;------------------------------------------------------------------------------
+        ; Function: TrimTrailingNewlines
+        ; Purpose: trims the return char off of a string
+        ; 
+        ; Parameters:
+        ;   Stack 0: The string
+        ;
+        ; Returns:
+        ;   0: The string trimmed 
+        ;
+        ; Example:
+        ;   Push "Test string\r\n\r\n"    ; First version
+        ;   Call TrimTrailingNewlines
+        ;   Pop $R0       ; $R0 will contain 0 ("Test String")
+        ;------------------------------------------------------------------------------
+        Exch $0 ; String
+        Push $1 ; Loop counter
+
+        ${Do}
+            StrCpy $1 $0 1 -1
+            ${If} $1 == "$\r" 
+            ${OrIf} $1 == "$\n"
+                StrLen $1 $0
+                IntOp $1 $1 - 1
+                StrCpy $0 $0 $1
+            ${Else}
+                ${Break}
+            ${EndIf}
+        ${Loop}
+
+        Pop $1
+        Exch $0
+    FunctionEnd
+
+
     ; Function to get the primary IP address of the network adapter
     Function GetPrimaryIPAddress
         ; Get the IP address of the network adapter associated with the default gateway
         nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $$_.InterfaceIndex -eq (Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select-Object -First 1).InterfaceIndex }).IPAddress"'
         Pop $0
         Pop $PrimaryIP
+
+        ;trim the return at the end
+        Push $PrimaryIP
+        Call TrimTrailingNewlines
+        Pop $PrimaryIP        
 
         ${If} $0 != 0
             MessageBox MB_OK "Error: Could not retrieve IP address of the primary network adapter."
