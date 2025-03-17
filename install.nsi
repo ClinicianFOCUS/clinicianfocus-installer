@@ -1051,10 +1051,15 @@ FunctionEnd
         ${EndIf}
 
         ; Create an Edit control to display the API key
-        ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+        ${NSD_CreateText} 0u $1 75% 12u "$APIKey"
         Pop $0
         ; Make the text box read-only
         SendMessage $0 ${EM_SETREADONLY} 1 0
+
+        ${NSD_CreateButton} 80% $1 20% 12u "Copy API Key"
+        Pop $0
+        ${NSD_OnClick} $0 CopyAPIKey
+
         IntOp $1 $1 + 25 ; Increment the vertical position
 
         ${If} $LLM_Installed == 1
@@ -1064,10 +1069,14 @@ FunctionEnd
             IntOp $1 $1 + 20 ; Increment the vertical position
 
             ; Create an Edit control to display the IP address
-            ${NSD_CreateText} 0u $1 100% 12u "https://$PrimaryIP:3334/v1"
+            ${NSD_CreateText} 0u $1 75% 12u "https://$PrimaryIP:3334/v1"
             Pop $0
             ; Make the text box read-only
             SendMessage $0 ${EM_SETREADONLY} 1 0
+
+            ${NSD_CreateButton} 80% $1 20% 12u "Copy Endpoint"
+            Pop $0
+            ${NSD_OnClick} $0 CopyLLMEndpoint
             IntOp $1 $1 + 25 ; Increment the vertical position
         ${EndIf}
         
@@ -1078,16 +1087,117 @@ FunctionEnd
             IntOp $1 $1 + 20 ; Increment the vertical position
 
             ; Create an Edit control to display the IP address
-            ${NSD_CreateText} 0u $1 100% 12u "https://$PrimaryIP:2224/whisperaudio"
+            ${NSD_CreateText} 0u $1 75% 12u "https://$PrimaryIP:2224/whisperaudio"
             Pop $0
             ; Make the text box read-only
             SendMessage $0 ${EM_SETREADONLY} 1 0
-            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ${NSD_CreateButton} 80% $1 20% 12u "Copy Endpoint"
+            Pop $0
+            ${NSD_OnClick} $0 CopyS2TEndpoint
+            IntOp $1 $1 + 25 ; Increment the vertical position
         ${EndIf}
 
         nsDialogs::Show
 
     FunctionEnd
+
+    Function CopyToClipboard
+        ;------------------------------------------------------------------------------
+        ; Function: CopyToClipboard
+        ; Purpose: trims the return char off of a string
+        ; 
+        ; Parameters:
+        ;   Stack 0: The string to copy to clipboard
+        ;
+        ; Returns:
+        ;   none
+        ;
+        ; Example:
+        ;   Push "Test string"    ; First version
+        ;   Call CopyToClipboard
+        ;   ; windows keyboard now has text in it
+        ;------------------------------------------------------------------------------
+        ; code from https://nsis.sourceforge.io/Copy_to,_or_get_from_Windows_Clipboard
+        Exch $0 ;input string
+        Push $1
+        Push $2
+        System::Call 'user32::OpenClipboard(i 0)'
+        System::Call 'user32::EmptyClipboard()'
+        StrLen $1 $0
+        IntOp $1 $1 + 1
+        IntOp $1 $1 * 2 ; Multiply by 2 for wide chars
+        System::Call 'kernel32::GlobalAlloc(i 2, i r1) i.r1'
+        System::Call 'kernel32::GlobalLock(i r1) i.r2'
+        System::Call 'kernel32::lstrcpyW(i r2, w r0)' ; Changed A to W and t to w
+        System::Call 'kernel32::GlobalUnlock(i r1)'
+        System::Call 'user32::SetClipboardData(i 13, i r1)' ; CF_UNICODETEXT is 13
+        System::Call 'user32::CloseClipboard()'
+        Pop $2
+        Pop $1
+        Pop $0
+    FunctionEnd
+
+    Function CopyS2TEndpoint
+        ;------------------------------------------------------------------------------
+        ; Function: CopyS2TEndpoint
+        ; Purpose: Copies the S2T endpoint to the clipboard
+        ; 
+        ; Parameters:
+        ;   None
+        ;
+        ; Returns:
+        ;   none
+        ;
+        ; Example:
+        ;   Call CopyS2TEndpoint
+        ;   ; windows keyboard now has text in it
+        ;------------------------------------------------------------------------------
+        ; Copy the S2T endpoint to the clipboard
+        Push "https://$PrimaryIP:2224/whisperaudio"
+        Call CopyToClipboard
+    FunctionEnd
+
+    Function CopyLLMEndpoint
+        ;------------------------------------------------------------------------------
+        ; Function: CopyLLMEndpoint
+        ; Purpose: Copies the LLM endpoint to the clipboard
+        ; 
+        ; Parameters:
+        ;   None
+        ;
+        ; Returns:
+        ;   none
+        ;
+        ; Example:
+        ;   Call CopyLLMEndpoint
+        ;   ; windows keyboard now has text in it
+        ;------------------------------------------------------------------------------
+        ; Copy the LLM endpoint to the clipboard
+        Push "https://$PrimaryIP:3334/v1"
+        Call CopyToClipboard
+    FunctionEnd
+
+    Function CopyAPIKey
+        ;------------------------------------------------------------------------------
+        ; Function: CopyAPIKey
+        ; Purpose: Copies the API endpoint to the clipboard
+        ; 
+        ; Parameters:
+        ;   None
+        ;
+        ; Returns:
+        ;   none
+        ;
+        ; Example:
+        ;   Call CopyS2TEndpoint
+        ;   ; windows keyboard now has text in it
+        ;------------------------------------------------------------------------------
+        ; Copy the API key to the clipboard
+        Push $APIKey
+        Call CopyToClipboard
+    FunctionEnd
+
 
 ;--------------------------------
 ;Generate Api Key Page Customization using nsDialogs
