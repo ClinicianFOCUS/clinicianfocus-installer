@@ -301,7 +301,7 @@ FunctionEnd
             CreateDirectory "$INSTDIR\local-llm-container"
             CreateDirectory "$INSTDIR\local-llm-container\models"
             SetOutPath "$INSTDIR\local-llm-container"
-            ; File ".\local-llm-container\*.*"
+            File ".\local-llm-container\*.*"
             StrCpy $LLM_Installed 1              
         SectionEnd
 
@@ -339,7 +339,7 @@ FunctionEnd
             
             ;; Copy in new files
             SetOutPath "$INSTDIR\speech2text-container"
-            ; File ".\speech2text-container\*.*"
+            File ".\speech2text-container\*.*"
 
             StrCpy $Speech2Text_Installed 1
         SectionEnd
@@ -374,7 +374,7 @@ FunctionEnd
         ; Create directories for Freescribe Client
         CreateDirectory "$INSTDIR\freescribe"
         SetOutPath "$INSTDIR\freescribe"
-        ; File ".\freescribe\FreeScribeInstaller_windows.exe"
+        File ".\freescribe\FreeScribeInstaller_windows.exe"
 
         ; Execute Freescribe installer silently
         ExecWait '"$INSTDIR\freescribe\FreeScribeInstaller_windows.exe" /S /ARCH=$SELECTED_ARCH_FREESCRIBE'
