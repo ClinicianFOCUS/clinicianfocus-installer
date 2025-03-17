@@ -1128,6 +1128,12 @@ FunctionEnd
         IntOp $1 $1 + 1
         IntOp $1 $1 * 2 ; Multiply by 2 for wide chars
         System::Call 'kernel32::GlobalAlloc(i 2, i r1) i.r1'
+        StrCmp $r1 0 AllocationFailed
+        goto ContinueAlloc
+        AllocationFailed:
+        MessageBox MB_ICONEXCLAMATION "GlobalAlloc failed"
+        Abort
+        ContinueAlloc:
         System::Call 'kernel32::GlobalLock(i r1) i.r2'
         System::Call 'kernel32::lstrcpyW(i r2, w r0)' ; Changed A to W and t to w
         System::Call 'kernel32::GlobalUnlock(i r1)'
