@@ -33,6 +33,7 @@
     Var DropDown_WhisperModel
 
     Var APIKey
+    Var APIKey2
     Var WhisperModel
 
     Var Checkbox_BasicInstall
@@ -970,6 +971,55 @@ FunctionEnd
         ${EndIf}
     FunctionEnd
 
+    ;------------------------------------------------------------------------------
+    ; Function: ReadEnvFile
+    ; Purpose: Read the API key from the .env file
+    ; 
+    ; Parameters:
+    ;   Stack 0 : File path to the .env file
+    ;
+    ;------------------------------------------------------------------------------
+    Function ReadEnvFile
+        Exch $0 ; File path
+        Push $2
+        Push $3
+        Push $4
+
+        ; Open the .env file
+        FileOpen $2 $0 r
+        ${If} $2 == ""
+            MessageBox MB_OK "Error: Could not open .env file."
+            Pop $4
+            Pop $3
+            Pop $2
+            Exch $0
+            Abort
+        ${EndIf}
+
+        ; Read the file line by line
+        loop:
+            FileRead $2 $3
+            ${If} $3 == ""
+                Goto done
+            ${EndIf}
+
+            ; Check if the line contains the API key
+            StrCpy $4 $3 15
+            ${If} $4 == "SESSION_API_KEY"
+                ; Extract the API key value
+                StrCpy $APIKey2 $3 "" 16
+                StrCpy $APIKey2 $APIKey2 -2 ; Remove the trailing newline characters
+                Goto done
+            ${EndIf}
+            Goto loop
+
+        done:
+            FileClose $2
+            Pop $4
+            Pop $3
+            Exch $0
+    FunctionEnd
+
     ; Function to create the API Info page
     Function CreateAPIInfoPage
         call GetPrimaryIPAddress
@@ -989,29 +1039,74 @@ FunctionEnd
                 ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM and S2T):"
                 Pop $0
                 IntOp $1 $1 + 20 ; Increment the vertical position
+
+                ; Create an Edit control to display the API key
+                ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+                Pop $0
             ${Else}
+                ; Create a label for the API key
+                ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM) (not changed)"
+                Pop $0
+                IntOp $1 $1 + 20 ; Increment the vertical position
+
+                ; Read the API key from the .env file
+                Push "$INSTDIR\local-llm-container\.env"
+                Call ReadEnvFile
+                
+                ; Create an Edit control to display the API key
+                ${NSD_CreateText} 0u $1 100% 12u "$APIKey2"
+                Pop $0
+                SendMessage $0 ${EM_SETREADONLY} 1 0
+                IntOp $1 $1 + 25 ;Increment the vertical position
+
                 ; Create a label for the API key
                 ${NSD_CreateLabel} 0u $1 100% 12u "API Key (S2T)"
                 Pop $0
                 IntOp $1 $1 + 20 ; Increment the vertical position
+
+                ; Create an Edit control to display the API key
+                ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+                Pop $0
             ${EndIf}
         ${ElseIf} $LLMHasEnv != 1
+            ; Create a label for the API key
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key (S2T) (not changed)"
+            Pop $0
+            IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Read the API key from the .env file
+            Push "$INSTDIR\speech2text-container\.env"
+            Call ReadEnvFile
+            
+            ; Create an Edit control to display the API key
+            ${NSD_CreateText} 0u $1 100% 12u "$APIKey2"
+            Pop $0
+            SendMessage $0 ${EM_SETREADONLY} 1 0
+            IntOp $1 $1 + 25 ;Increment the vertical position
+
             ; Create a label for the API key
             ${NSD_CreateLabel} 0u $1 100% 12u "API Key (LLM)"
             Pop $0
             IntOp $1 $1 + 20 ; Increment the vertical position
+
+            ; Create an Edit control to display the API key
+            ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
+            Pop $0
         ${Else}
             ; Create a label for the API key
-            ${NSD_CreateLabel} 0u $1 100% 12u "API Key not changed for both LLM and S2T"
+            ${NSD_CreateLabel} 0u $1 100% 12u "API Key for both LLM and S2T (not changed)"
             Pop $0
             IntOp $1 $1 + 20 ; Increment the vertical position
 
-            StrCpy $APIKey "Not Changed"
+            ; Read the API key from the .env file
+            Push "$INSTDIR\local-llm-container\.env"
+            Call ReadEnvFile
+            
+            ; Create an Edit control to display the API key
+            ${NSD_CreateText} 0u $1 100% 12u "$APIKey2"
+            Pop $0
         ${EndIf}
 
-        ; Create an Edit control to display the API key
-        ${NSD_CreateText} 0u $1 100% 12u "$APIKey"
-        Pop $0
         ; Make the text box read-only
         SendMessage $0 ${EM_SETREADONLY} 1 0
         IntOp $1 $1 + 25 ; Increment the vertical position
@@ -1426,8 +1521,15 @@ FunctionEnd
 
     ; Function to generate API key
     Function GenerateAPIKey
+        ; Create a temporary PowerShell script to generate a random API key
+        FileOpen $0 "$TEMP\randomApi.ps1" w
+        FileWrite $0 "$$words = @('apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'kiwi', 'lemon', 'mango', 'nectarine', 'orange', 'papaya', 'quince', 'raspberry', 'strawberry', 'tangerine', 'ugli', 'vanilla', 'watermelon', 'xigua', 'yellowfruit', 'zucchini')$\r$\n"
+        FileWrite $0 "$$randomWords = ($$words | Get-Random -Count 6) -join '-';$\r$\n"
+        FileWrite $0 "$$randomWords$\r$\n"
+        FileClose $0
+        
         ; Generate a random API key
-        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[guid]::NewGuid().ToString()"'
+        nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$TEMP\randomApi.ps1"' 
         Pop $0
         Pop $APIKey
 
@@ -1438,6 +1540,9 @@ FunctionEnd
 
         ; Set the generated API key in the text box
         ${NSD_SetText} $Input_APIKey $APIKey
+        
+        ; Clean up the PowerShell script
+        Delete "$TEMP\randomApi.ps1"
     FunctionEnd
 
     ;------------------------------------------------------------------------------
