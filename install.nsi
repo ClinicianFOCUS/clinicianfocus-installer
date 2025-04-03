@@ -1080,6 +1080,12 @@ FunctionEnd
     Function ApiPageLeave
         ; Get the API key entered by the user
         ${NSD_GetText} $Input_APIKey $APIKey
+
+        ; Prevent leaving the page if the API key is empty
+        StrCmp $APIKey "" 0 +3
+        MessageBox MB_OK "Please enter or generate an API Key before proceeding."
+        Abort
+
     FunctionEnd
 
 ;--------------------------------
