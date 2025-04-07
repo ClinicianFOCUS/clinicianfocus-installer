@@ -1237,6 +1237,12 @@ FunctionEnd
     Function ApiPageLeave
         ; Get the API key entered by the user
         ${NSD_GetText} $Input_APIKey $APIKey
+
+        ; Prevent leaving the page if the API key is empty
+        StrCmp $APIKey "" 0 +3
+        MessageBox MB_OK "Please enter or generate an API Key before proceeding."
+        Abort
+
     FunctionEnd
 
 ;--------------------------------
@@ -1317,8 +1323,16 @@ FunctionEnd
 
     Function ModelPageLeave
         ${NSD_GetText} $DropDown_Model $1  ; $0 will hold the user input
-        StrCmp $1 "Custom" 0 +2
+        StrCmp $1 "Custom" +2
+            Goto NotCustomModel
         ${NSD_GetText} $Input_CustomModel $1
+
+        ; Prevent leaving the page if the Custom model is empty
+        StrCmp $1 "" 0 +3
+        MessageBox MB_OK "Please enter or select a model before proceeding."
+        Abort
+        
+        NotCustomModel:
         
         ; ; Get the Huggingface token
         ; ${NSD_GetText} $Input_HFToken $2
