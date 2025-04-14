@@ -18,13 +18,16 @@ Ensure you have the following installed on your system before running the script
 
 ## Changing Network Profile From Public To Private
 
-  For Windows
+For Windows:
 
-  1. Click on the Network icon in the system tray (near the clock) and select “Open Network & Internet settings”.
-  2. Click on “Ethernet” or “Wi-Fi” (depending on your connection type) and select the connected network.
-  3. Look for the “Network profile type” or “Network location” section.
-  4. Change to Private Network
+1. Click on the Network icon in the system tray (near the clock) and select “Open Network & Internet settings”.
+2. Click on “Ethernet” or “Wi-Fi” (depending on your connection type) and select the connected network.
+3. Look for the “Network profile type” or “Network location” section.
+4. Change to Private Network.
 
 ## Additional Notes
 
-- To obtain a Hugging Face token, please refer to the [Hugging Face documentation](https://huggingface.co/docs/transformers.js/en/guides/private) (only complete step one).
+- To obtain API key follow these steps:
+  1. Start the Docker container.
+  2. Access the Docker logs to view the API key.
+  3. Use the API key on the settings page for the Speech2Text (Whisper) API Key and AI Server API Key.
